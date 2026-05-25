@@ -1,303 +1,281 @@
 "use client";
 import { useState } from "react";
 
-/* ── formatação ──────────────────────────────────────────────── */
-const R$ = (v) => v.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
-const N  = (v, d=2) => v.toLocaleString("pt-BR", { minimumFractionDigits:d, maximumFractionDigits:d });
+const fmt  = (v) => v.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+const fmtN = (v, d = 2) => v.toLocaleString("pt-BR", { minimumFractionDigits:d, maximumFractionDigits:d });
 
-/* ── design tokens (8px grid) ────────────────────────────────── */
-const C = {
-  cobre:      "#C98244",
-  terra:      "#B56B3A",
-  negro:      "#0D0C0A",
-  noturno:    "#1A1E2E",
-  perg:       "#F2EAD8",
-  cinzaClr:   "#B8B0A8",
-  cinzaMed:   "#6B6460",
-  cinzaEsc:   "#3A3632",
-  solar:      "#E8A855",
-  leva:       "#A0522D",
-  emb:        "#8B7355",
-  mo:         "#9E8A75",
-  urg:        "#C44B2A",
-  brd:        "rgba(201,130,68,0.12)",
-  brd2:       "rgba(201,130,68,0.24)",
-  glass:      "rgba(26,30,46,0.7)",
+/* ── Design System Talharia ───────────────────────────────────── */
+const COPPER   = "#C98244";   // cobre — acento principal
+const TERRA    = "#B56B3A";   // terracota — acento secundário
+const TERRA_D  = "#AB5330";   // terracota profunda
+const COPPER_L = "#D17D59";   // cobre claro
+const BLUE     = "#6D7CFF";   // azul dashboard (contraste)
+const SUCCESS  = "#31B976";   // verde positivo
+const DANGER   = "#FF5252";   // vermelho crítico
+const BG       = "#0D0C0A";   // negro sagrado
+const PERG     = "#F2EAD8";   // pergaminho
+const BORDER   = "rgba(201,130,68,0.18)";
+
+/* mapeamento semântico para as abas */
+const ACCENT  = COPPER;   // aba Custo
+const ACCENT2 = BLUE;     // consumíveis / gráfico secundário
+const SOLAR   = COPPER;   // energia solar
+const REVENDA = TERRA;    // aba Revenda
+const CUSTOM  = COPPER_L; // aba Personalizado
+
+const CARD_BASE = {
+  background: "linear-gradient(180deg, rgba(26,30,46,0.86) 0%, rgba(13,12,10,0.94) 100%)",
+  border: `1px solid ${BORDER}`,
+  borderRadius: 20,
+  boxShadow: "0 20px 60px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.04)",
 };
-/* 8px scale: 4 8 16 24 32 40 48 64 */
-const sp = (n) => `${n * 8}px`;
 
-/* ── base atoms ──────────────────────────────────────────────── */
-function Icon({ n, s=20, c, style={} }) {
+/* ── Componentes base ─────────────────────────────────────────── */
+function Toggle({ value, onChange, label, color }) {
+  const c = color || COPPER;
   return (
-    <span className="material-icons"
-      style={{ fontSize:s, color:c||"inherit", lineHeight:1, verticalAlign:"middle", userSelect:"none", ...style }}>
-      {n}
-    </span>
-  );
-}
-
-function Toggle({ on, set, label, color=C.cobre }) {
-  return (
-    <label style={{ display:"flex", alignItems:"center", gap:12, cursor:"pointer", userSelect:"none", marginBottom:16 }}>
-      <span onClick={()=>set(!on)} style={{ width:44, height:24, borderRadius:100, background:on?color:C.cinzaEsc, border:`1px solid ${on?color:C.brd}`, position:"relative", flexShrink:0, transition:"all .2s", display:"block" }}>
-        <span style={{ position:"absolute", top:3, left:on?22:3, width:16, height:16, borderRadius:"50%", background:C.perg, transition:"left .2s", display:"block" }} />
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+      <div
+        onClick={() => onChange(!value)}
+        style={{
+          width:42, height:24, borderRadius:100,
+          background: value ? c : "rgba(26,30,46,0.80)",
+          border: `1px solid ${value ? c+"80" : "rgba(201,130,68,0.14)"}`,
+          cursor:"pointer", position:"relative", transition:"all .25s", flexShrink:0,
+        }}
+      >
+        <div style={{
+          position:"absolute", top:3, left: value ? 21 : 3,
+          width:16, height:16, background:"#fff", borderRadius:"50%", transition:"left .25s",
+        }} />
+      </div>
+      <span style={{ fontSize:13, color: value ? PERG : "rgba(242,234,216,0.40)", fontFamily:"'Inter',sans-serif" }}>
+        {label}
       </span>
-      <span style={{ fontSize:14, color:on?C.cinzaClr:C.cinzaMed, lineHeight:1.4 }}>{label}</span>
-    </label>
+    </div>
   );
 }
 
-function Field({ label, hint, value, onChange, unit, step=1, min=0, color }) {
-  const ac = color || C.brd;
+function Field({ label, hint, value, onChange, unit, step=1, min=0, highlight }) {
   return (
     <div style={{ marginBottom:16 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6, gap:8, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", alignItems:"baseline", gap:6, flexWrap:"wrap" }}>
-          <span style={{ fontSize:14, color:C.cinzaClr, fontWeight:500 }}>{label}</span>
-          {hint && <span style={{ fontSize:12, color:C.cinzaMed }}>{hint}</span>}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6, flexWrap:"wrap", gap:4 }}>
+        <div>
+          <span style={{ fontSize:13, color:"rgba(242,234,216,0.72)", fontWeight:500, fontFamily:"'Inter',sans-serif" }}>{label}</span>
+          {hint && <span style={{ fontSize:11, color:"rgba(242,234,216,0.28)", marginLeft:6, fontFamily:"'Inter',sans-serif" }}>{hint}</span>}
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <input type="number" min={min} step={step} value={value}
-            onChange={e => onChange(parseFloat(e.target.value)||0)}
-            style={{ width:96, padding:"8px 12px", background:color?`${color}12`:"rgba(242,234,216,0.04)", border:`1px solid ${color?color+"40":C.brd}`, borderRadius:8, color:color||C.perg, fontSize:16, fontWeight:600, textAlign:"right", outline:"none", WebkitAppearance:"none", fontFamily:"inherit" }}
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <input
+            type="number" min={min} step={step} value={value}
+            onChange={e => onChange(parseFloat(e.target.value) || 0)}
+            style={{
+              width:88, padding:"8px 12px",
+              background: highlight ? `${highlight}12` : "rgba(242,234,216,0.045)",
+              border: `1px solid ${highlight ? highlight+"44" : "rgba(242,234,216,0.12)"}`,
+              borderRadius:12,
+              color: highlight || PERG,
+              fontSize:14, fontFamily:"'Inter',sans-serif",
+              fontVariantNumeric:"tabular-nums",
+              textAlign:"right", outline:"none", WebkitAppearance:"none",
+              transition:"border-color .2s",
+            }}
           />
-          {unit && <span style={{ fontSize:12, color:C.cinzaMed, minWidth:36 }}>{unit}</span>}
+          {unit && <span style={{ fontSize:11, color:"rgba(242,234,216,0.28)", minWidth:40, fontFamily:"'Inter',sans-serif" }}>{unit}</span>}
         </div>
       </div>
     </div>
   );
 }
 
-function Card({ title, icon, accent=C.cobre, children, noBorder }) {
+function Card({ title, icon, children, accent }) {
+  const a = accent || COPPER;
   return (
-    <div style={{ background:C.glass, border:noBorder?"none":`1px solid ${accent}18`, borderRadius:16, padding:"24px", marginBottom:16, backdropFilter:"blur(8px)" }}>
-      {(title||icon) && (
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, paddingBottom:16, borderBottom:`1px solid ${C.brd}` }}>
-          {icon && <Icon n={icon} s={16} c={accent} />}
-          <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", color:accent, textTransform:"uppercase" }}>{title}</span>
+    <div style={{
+      ...CARD_BASE,
+      border: `1px solid ${a}28`,
+      padding:"20px 22px",
+      marginBottom:12,
+    }}>
+      <div style={{
+        display:"flex", alignItems:"center", gap:10, marginBottom:18,
+        paddingBottom:14, borderBottom:"1px solid rgba(242,234,216,0.07)",
+      }}>
+        <div style={{
+          width:34, height:34, borderRadius:10,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          background: `${a}14`,
+          border: `1px solid ${a}28`,
+          fontSize:16, flexShrink:0,
+        }}>
+          {icon}
         </div>
-      )}
+        <span style={{
+          fontFamily:"'Jost',sans-serif", fontSize:12, fontWeight:700,
+          letterSpacing:1.5, color:a, textTransform:"uppercase",
+        }}>
+          {title}
+        </span>
+      </div>
       {children}
     </div>
   );
 }
 
 function Bar({ label, value, total, color }) {
-  const pct = total > 0 ? Math.min(100,(value/total)*100) : 0;
+  const pct = total > 0 ? Math.min(100, (value / total) * 100) : 0;
   return (
     <div style={{ marginBottom:12 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-        <span style={{ fontSize:12, color:C.cinzaMed }}>{label}</span>
-        <span style={{ fontSize:12, color:C.cinzaClr, fontWeight:600 }}>{pct.toFixed(0)}% · {R$(value)}</span>
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+        <span style={{ fontSize:12, color:"rgba(242,234,216,0.45)", fontFamily:"'Inter',sans-serif" }}>{label}</span>
+        <span style={{ fontSize:12, color:"rgba(242,234,216,0.65)", fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>
+          {pct.toFixed(1)}% · {fmt(value)}
+        </span>
       </div>
-      <div style={{ height:4, background:"rgba(242,234,216,0.06)", borderRadius:4 }}>
-        <div style={{ height:"100%", width:`${pct}%`, background:color, borderRadius:4, transition:"width .4s ease" }} />
+      <div style={{ height:5, background:"rgba(242,234,216,0.06)", borderRadius:10, overflow:"hidden" }}>
+        <div style={{ height:"100%", width:`${pct}%`, background:color, borderRadius:10, transition:"width .4s ease" }} />
       </div>
     </div>
   );
 }
 
-function Pill({ children, color=C.cobre }) {
+function InfoBox({ color, children }) {
+  const c = color || COPPER;
   return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 10px", borderRadius:100, background:`${color}18`, border:`1px solid ${color}35`, fontSize:11, fontWeight:700, color, letterSpacing:"0.06em" }}>
+    <div style={{
+      background:`${c}0C`, border:`1px solid ${c}1E`,
+      borderRadius:12, padding:"10px 14px",
+      fontSize:12, color:"rgba(242,234,216,0.52)", lineHeight:1.6,
+      marginTop:4, fontFamily:"'Inter',sans-serif",
+    }}>
       {children}
-    </span>
-  );
-}
-
-function InfoBox({ color=C.cobre, children }) {
-  return (
-    <div style={{ background:`${color}0C`, border:`1px solid ${color}22`, borderRadius:8, padding:"12px 16px", fontSize:13, color:C.cinzaClr, lineHeight:1.6, marginTop:4, display:"flex", gap:10, alignItems:"flex-start" }}>
-      <Icon n="lightbulb" s={16} c={color} style={{ flexShrink:0, marginTop:1 }} />
-      <span>{children}</span>
     </div>
   );
 }
 
-/* ── result line ─────────────────────────────────────────────── */
-function ResultRow({ label, value, sub, accent, strike }) {
+function TabBtn({ active, onClick, children, color }) {
+  const c = color || COPPER;
   return (
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:`1px solid ${C.brd}` }}>
-      <div>
-        <div style={{ fontSize:14, color:C.cinzaClr }}>{label}</div>
-        {sub && <div style={{ fontSize:11, color:C.cinzaMed, marginTop:2 }}>{sub}</div>}
-      </div>
-      <span style={{ fontSize:15, fontWeight:600, color:accent||C.perg, textDecoration:strike?"line-through":"none" }}>{value}</span>
-    </div>
+    <button
+      onClick={onClick}
+      style={{
+        flex:1, padding:"11px 8px",
+        border: active ? `1px solid ${c}30` : "1px solid transparent",
+        cursor:"pointer", borderRadius:12,
+        background: active ? `linear-gradient(135deg, ${c}22, ${c}0E)` : "transparent",
+        color: active ? c : "rgba(242,234,216,0.32)",
+        fontFamily:"'Jost',sans-serif",
+        fontSize:10, letterSpacing:1.8, textTransform:"uppercase",
+        fontWeight: active ? 700 : 500,
+        outline:"none", transition:"all .2s",
+        borderBottom: active ? `2px solid ${c}` : "2px solid transparent",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
-/* ── result panel ────────────────────────────────────────────── */
-function PainelResultado({ total, totalSemSolar, precoVenda, margem, bars, usaSolar, economiaSolar, usaLeva, pecasLeva, horasLeva, onRevenda, onCustom }) {
-  return (
-    <div style={{ background:`linear-gradient(160deg, ${C.noturno}, ${C.negro} 80%)`, border:`1px solid ${C.brd2}`, borderRadius:20, padding:24, position:"sticky", top:24 }}>
-      {/* mini header */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:24 }}>
-        <Icon n="calculate" s={16} c={C.cobre} />
-        <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", color:C.cobre, textTransform:"uppercase" }}>Resultado por peça</span>
-      </div>
-
-      {usaLeva && (
-        <div style={{ display:"flex", gap:8, alignItems:"center", background:`${C.leva}14`, border:`1px solid ${C.leva}30`, borderRadius:12, padding:"12px 16px", marginBottom:16 }}>
-          <Icon n="print" s={16} c={C.leva} />
-          <div>
-            <div style={{ fontSize:13, color:C.leva, fontWeight:600 }}>Modo Leva · {pecasLeva}× · {horasLeva}h</div>
-            <div style={{ fontSize:11, color:C.cinzaMed, marginTop:2 }}>Custos divididos por {pecasLeva} peças</div>
-          </div>
-        </div>
-      )}
-
-      {/* custo rows */}
-      <div style={{ marginBottom:8 }}>
-        {bars.map(b => (
-          <ResultRow key={b.label} label={b.label} value={R$(b.v)} sub={b.sub} accent={b.solar?C.solar:undefined} />
-        ))}
-        {usaSolar && economiaSolar > 0 && (
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", margin:"8px 0", background:`${C.solar}10`, borderRadius:8, border:`1px dashed ${C.solar}35` }}>
-            <span style={{ fontSize:13, color:C.solar, display:"flex", alignItems:"center", gap:6 }}><Icon n="wb_sunny" s={14} c={C.solar} />Economia solar</span>
-            <span style={{ fontSize:14, fontWeight:700, color:C.solar }}>− {R$(economiaSolar)}</span>
-          </div>
-        )}
-      </div>
-
-      {/* subtotal */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 0", borderTop:`1px solid ${C.brd2}`, borderBottom:`1px solid ${C.brd}` }}>
-        <span style={{ fontSize:15, fontWeight:700, color:C.perg }}>Custo total</span>
-        <span style={{ fontSize:20, fontWeight:700, color:C.perg }}>{R$(total)}</span>
-      </div>
-      {usaSolar && (
-        <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0 0" }}>
-          <span style={{ fontSize:12, color:C.cinzaMed }}>Sem solar</span>
-          <span style={{ fontSize:12, color:C.cinzaMed, textDecoration:"line-through" }}>{R$(totalSemSolar)}</span>
-        </div>
-      )}
-      <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0 16px" }}>
-        <span style={{ fontSize:13, color:C.cinzaMed }}>Margem ({margem}%)</span>
-        <span style={{ fontSize:13, color:C.cinzaMed }}>+ {R$(total*margem/100)}</span>
-      </div>
-
-      {/* preço hero */}
-      <div style={{ background:`linear-gradient(135deg, ${C.cobre}20, ${C.terra}10)`, border:`1px solid ${C.cobre}50`, borderRadius:16, padding:"24px 20px", textAlign:"center", marginBottom:24 }}>
-        <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.14em", color:C.cobre, textTransform:"uppercase", marginBottom:8 }}>Preço Mínimo de Venda</div>
-        <div style={{ fontSize:40, fontWeight:700, color:C.perg, letterSpacing:"-0.02em", lineHeight:1 }}>{R$(precoVenda)}</div>
-        <div style={{ fontSize:12, color:C.cinzaMed, marginTop:8 }}>por peça · venda unitária</div>
-      </div>
-
-      {/* composition bars */}
-      <div style={{ marginBottom:24 }}>
-        <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.1em", color:C.cinzaMed, textTransform:"uppercase", marginBottom:12 }}>Composição do custo</div>
-        {bars.map(b => <Bar key={b.label} label={b.label} value={b.v} total={total} color={b.color} />)}
-      </div>
-
-      {/* métricas */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
-        {[
-          { l:"Por grama",    v: R$(total/Math.max(1,3)) },
-          { l:"10 peças/mês", v: R$(precoVenda*10) },
-          { l:"25 peças/mês", v: R$(precoVenda*25) },
-          { l:"50 peças/mês", v: R$(precoVenda*50) },
-        ].map(c => (
-          <div key={c.l} style={{ background:"rgba(242,234,216,0.03)", border:`1px solid ${C.brd}`, borderRadius:12, padding:"12px 14px" }}>
-            <div style={{ fontSize:11, color:C.cinzaMed, marginBottom:4 }}>{c.l}</div>
-            <div style={{ fontSize:14, fontWeight:600, color:C.cinzaClr }}>{c.v}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* navegar abas */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        <button onClick={onRevenda} style={{ padding:"12px 8px", background:`${C.terra}14`, border:`1px solid ${C.terra}35`, borderRadius:12, color:C.terra, fontSize:12, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-          <Icon n="storefront" s={14} c={C.terra} />Revenda
-        </button>
-        <button onClick={onCustom} style={{ padding:"12px 8px", background:`${C.cobre}14`, border:`1px solid ${C.cobre}35`, borderRadius:12, color:C.cobre, fontSize:12, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-          <Icon n="diamond" s={14} c={C.cobre} />Personalizado
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ── ABA REVENDA ─────────────────────────────────────────────── */
-function AbaRevenda({ total, precoVenda, margem, custoSetup }) {
+/* ── ABA REVENDA ──────────────────────────────────────────────── */
+function TabelaRevenda({ custoBase, custoSetup }) {
   const [mVar, setMVar] = useState(40);
   const [mRev, setMRev] = useState(25);
   const [mAta, setMAta] = useState(15);
   const [bulk, setBulk] = useState(10);
 
   const faixas = [
-    { label:"Varejo",  qtd:1,   icon:"shopping_bag", m:mVar, color:C.cobre },
-    { label:"Varejo",  qtd:5,   icon:"shopping_bag", m:mVar, color:C.cobre },
-    { label:"Revenda", qtd:10,  icon:"store",        m:mRev, color:C.terra },
-    { label:"Revenda", qtd:25,  icon:"store",        m:mRev, color:C.terra },
-    { label:"Atacado", qtd:50,  icon:"inventory_2",  m:mAta, color:C.leva },
-    { label:"Atacado", qtd:100, icon:"inventory_2",  m:mAta, color:C.leva },
+    { label:"Varejo",  qtd:1,   icon:"🛍️", margem:mVar,  color:COPPER },
+    { label:"Varejo",  qtd:5,   icon:"🛍️", margem:mVar,  color:COPPER },
+    { label:"Revenda", qtd:10,  icon:"🏪", margem:mRev,  color:COPPER_L },
+    { label:"Revenda", qtd:25,  icon:"🏪", margem:mRev,  color:COPPER_L },
+    { label:"Atacado", qtd:50,  icon:"📦", margem:mAta,  color:TERRA },
+    { label:"Atacado", qtd:100, icon:"📦", margem:mAta,  color:TERRA },
   ];
+
   const calcUn = (qtd) => {
-    const d = qtd>=50 ? bulk/100 : qtd>=10 ? bulk/200 : 0;
-    return total*(1-d) + custoSetup/qtd;
+    const desc = qtd >= 50 ? bulk/100 : qtd >= 10 ? (bulk/100)*0.5 : 0;
+    return custoBase*(1-desc) + custoSetup/qtd;
   };
   const base1 = calcUn(1);
 
   return (
-    <div style={{ maxWidth:960, margin:"0 auto" }}>
-      {/* banner base */}
-      <div style={{ background:C.glass, border:`1px solid ${C.brd}`, borderRadius:16, padding:"16px 24px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:16 }}>
-        <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.1em", color:C.cinzaMed, textTransform:"uppercase" }}>Base de cálculo</div>
-        <div style={{ display:"flex", gap:32, flexWrap:"wrap" }}>
-          {[{l:"Custo",v:R$(total)},{l:"Preço varejo 1×",v:R$(precoVenda)},{l:"Margem atual",v:`${margem}%`}].map(c=>(
-            <div key={c.l} style={{ textAlign:"center" }}>
-              <div style={{ fontSize:11, color:C.cinzaMed, marginBottom:4 }}>{c.l}</div>
-              <div style={{ fontSize:16, fontWeight:700, color:C.cinzaClr }}>{c.v}</div>
+    <div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+        {[
+          { label:"Margem Varejo",  value:mVar, set:setMVar, color:COPPER },
+          { label:"Margem Revenda", value:mRev, set:setMRev, color:COPPER_L },
+          { label:"Margem Atacado", value:mAta, set:setMAta, color:TERRA },
+        ].map(m => (
+          <div key={m.label} style={{
+            background:`${m.color}0E`, border:`1px solid ${m.color}28`,
+            borderRadius:14, padding:"14px 10px", textAlign:"center",
+          }}>
+            <div style={{ fontSize:9, color:m.color, marginBottom:8, fontFamily:"'Jost',sans-serif", letterSpacing:1.5, textTransform:"uppercase", fontWeight:600 }}>
+              {m.label}
             </div>
-          ))}
-        </div>
+            <input
+              type="number" min={0} step={5} value={m.value}
+              onChange={e => m.set(parseFloat(e.target.value)||0)}
+              style={{
+                width:"100%", padding:"6px 4px", background:"transparent",
+                border:`1px solid ${m.color}28`, borderRadius:10,
+                color:m.color, fontFamily:"'Inter',sans-serif",
+                fontSize:20, fontWeight:700, textAlign:"center",
+                outline:"none", WebkitAppearance:"none",
+              }}
+            />
+            <div style={{ fontSize:10, color:"rgba(242,234,216,0.30)", marginTop:4, fontFamily:"'Inter',sans-serif" }}>%</div>
+          </div>
+        ))}
       </div>
 
-      <Card title="Margens por canal" icon="tune" accent={C.terra}>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:24 }}>
-          {[
-            {l:"Varejo",v:mVar,set:setMVar,color:C.cobre},
-            {l:"Revenda",v:mRev,set:setMRev,color:C.terra},
-            {l:"Atacado",v:mAta,set:setMAta,color:C.leva},
-          ].map(m=>(
-            <div key={m.l} style={{ background:`${m.color}0C`, border:`1px solid ${m.color}25`, borderRadius:12, padding:"16px", textAlign:"center" }}>
-              <div style={{ fontSize:11, color:m.color, fontWeight:700, letterSpacing:"0.08em", marginBottom:12 }}>{m.l}</div>
-              <input type="number" min={0} step={5} value={m.v} onChange={e=>m.set(parseFloat(e.target.value)||0)}
-                style={{ width:"100%", padding:"8px 4px", background:"transparent", border:`1px solid ${m.color}35`, borderRadius:8, color:m.color, fontFamily:"inherit", fontSize:24, fontWeight:700, textAlign:"center", outline:"none", WebkitAppearance:"none" }} />
-              <div style={{ fontSize:11, color:C.cinzaMed, marginTop:8 }}>%</div>
-            </div>
-          ))}
-        </div>
-        <Field label="Desconto bulk (filamento)" hint="ao comprar mais kg" value={bulk} onChange={setBulk} unit="%" step={1} />
-      </Card>
+      <Field label="Desconto bulk (filamento)" hint="ao comprar mais kg" value={bulk} onChange={setBulk} unit="%" step={1} />
 
-      {/* tabela */}
-      <div style={{ background:C.glass, border:`1px solid ${C.brd}`, borderRadius:16, overflow:"hidden" }}>
-        {/* header */}
-        <div style={{ display:"grid", gridTemplateColumns:"72px 1fr 1fr 1fr 1fr", background:"rgba(26,30,46,0.9)", padding:"12px 24px", gap:8, borderBottom:`1px solid ${C.brd}` }}>
-          {["Lote","Custo/un","Preço/un","Receita","Lucro"].map(h=>(
-            <span key={h} style={{ fontSize:11, fontWeight:700, color:C.cinzaMed, letterSpacing:"0.08em" }}>{h}</span>
+      <div style={{ borderRadius:16, overflow:"hidden", border:`1px solid rgba(201,130,68,0.14)` }}>
+        <div style={{
+          display:"grid", gridTemplateColumns:"80px 1fr 1fr 1fr 1fr",
+          background:"rgba(201,130,68,0.06)", padding:"10px 16px", gap:8,
+          borderBottom:`1px solid rgba(201,130,68,0.10)`,
+        }}>
+          {["Lote","Custo/un","Preço/un","Receita","Lucro"].map(h => (
+            <span key={h} style={{ fontSize:10, color:"rgba(242,234,216,0.35)", fontFamily:"'Jost',sans-serif", letterSpacing:1.2, textTransform:"uppercase", fontWeight:600 }}>{h}</span>
           ))}
         </div>
-        {faixas.map((f,i)=>{
-          const cu=calcUn(f.qtd), pu=cu*(1+f.m/100);
-          const eco=((base1-cu)/base1*100), isBest=f.qtd===25;
+        {faixas.map((f, i) => {
+          const cu   = calcUn(f.qtd);
+          const pu   = cu*(1+f.margem/100);
+          const eco  = ((base1-cu)/base1*100);
+          const isBest = f.qtd === 25;
           return (
-            <div key={i} style={{ display:"grid", gridTemplateColumns:"72px 1fr 1fr 1fr 1fr", padding:"16px 24px", gap:8, alignItems:"center", borderTop:`1px solid ${C.brd}`, background:isBest?`${f.color}06`:"transparent", position:"relative" }}>
-              {isBest && <div style={{ position:"absolute", top:0, right:16, background:f.color, color:C.negro, fontSize:9, fontWeight:700, padding:"3px 10px", borderRadius:"0 0 8px 8px", letterSpacing:"0.1em" }}>MELHOR</div>}
+            <div key={i} style={{
+              display:"grid", gridTemplateColumns:"80px 1fr 1fr 1fr 1fr",
+              padding:"14px 16px", gap:8, alignItems:"center",
+              borderTop:`1px solid rgba(242,234,216,0.05)`,
+              background: isBest ? `${f.color}08` : "transparent",
+              position:"relative",
+            }}>
+              {isBest && (
+                <div style={{
+                  position:"absolute", top:-1, right:12,
+                  background:`linear-gradient(135deg, ${TERRA_D}, ${COPPER})`,
+                  color:"#fff", fontSize:9, fontWeight:700,
+                  padding:"2px 10px", borderRadius:"0 0 8px 8px",
+                  fontFamily:"'Jost',sans-serif", letterSpacing:1.5,
+                }}>
+                  TOP
+                </div>
+              )}
               <div>
-                <div style={{ fontSize:18, fontWeight:700, color:f.color }}>{f.qtd}×</div>
-                <div style={{ fontSize:11, color:C.cinzaMed, display:"flex", alignItems:"center", gap:4, marginTop:2 }}><Icon n={f.icon} s={12} c={C.cinzaMed}/>{f.label}</div>
-                {eco>0.5&&<div style={{ fontSize:10, color:f.color, marginTop:2 }}>−{N(eco,1)}%</div>}
+                <div style={{ fontFamily:"'Inter',sans-serif", fontSize:16, fontWeight:700, color:f.color }}>{f.qtd}x</div>
+                <div style={{ fontSize:10, color:"rgba(242,234,216,0.35)", marginTop:2, fontFamily:"'Inter',sans-serif" }}>{f.icon} {f.label}</div>
+                {eco > 0.5 && <div style={{ fontSize:9, color:f.color, marginTop:2 }}>-{fmtN(eco,1)}%</div>}
               </div>
-              <div style={{ fontSize:14, fontWeight:600, color:C.cinzaMed }}>{R$(cu)}</div>
+              <div><span style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:"rgba(242,234,216,0.50)", fontVariantNumeric:"tabular-nums" }}>{fmt(cu)}</span></div>
               <div>
-                <div style={{ fontSize:16, fontWeight:700, color:C.perg }}>{R$(pu)}</div>
-                <div style={{ fontSize:11, color:C.cinzaMed }}>{f.m}%</div>
+                <div style={{ fontFamily:"'Inter',sans-serif", fontSize:14, color:PERG, fontWeight:600, fontVariantNumeric:"tabular-nums" }}>{fmt(pu)}</div>
+                <div style={{ fontSize:10, color:"rgba(242,234,216,0.30)", marginTop:2 }}>{f.margem}%</div>
               </div>
-              <div style={{ fontSize:14, fontWeight:600, color:f.color }}>{R$(pu*f.qtd)}</div>
-              <div style={{ fontSize:14, fontWeight:600, color:C.cobre }}>{R$((pu-cu)*f.qtd)}</div>
+              <div><span style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:f.color, fontVariantNumeric:"tabular-nums" }}>{fmt(pu*f.qtd)}</span></div>
+              <div><span style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:SUCCESS, fontVariantNumeric:"tabular-nums" }}>{fmt((pu-cu)*f.qtd)}</span></div>
             </div>
           );
         })}
@@ -306,226 +284,306 @@ function AbaRevenda({ total, precoVenda, margem, custoSetup }) {
   );
 }
 
-/* ── ABA PERSONALIZADO ───────────────────────────────────────── */
-function AbaPersonalizado({ custoBase, margemBase }) {
-  const [modelagem,  setModelagem]  = useState(false);
-  const [hMod,       setHMod]       = useState(1.5);
-  const [vlHMod,     setVlHMod]     = useState(80);
-  const [nRev,       setNRev]       = useState(2);
-  const [vlRev,      setVlRev]      = useState(20);
-  const [arquivo,    setArquivo]    = useState(false);
-  const [licenca,    setLicenca]    = useState(35);
-  const [posProc,    setPosProc]    = useState(false);
-  const [tipoPos,    setTipoPos]    = useState({lixamento:false,pintura:false,verniz:false,montagem:false});
-  const [hPos,       setHPos]       = useState(0.5);
-  const [vlHPos,     setVlHPos]     = useState(50);
-  const [matPos,     setMatPos]     = useState(8);
-  const [embP,       setEmbP]       = useState(false);
-  const [custoEmbP,  setCustoEmbP]  = useState(12);
-  const [complex,    setComplex]    = useState(15);
-  const [urgencia,   setUrgencia]   = useState(false);
-  const [percUrg,    setPercUrg]    = useState(30);
-  const [margem,     setMargem]     = useState(margemBase+40);
-  const [cliente,    setCliente]    = useState("");
-  const [produto,    setProduto]    = useState("");
+/* ── ABA PERSONALIZAÇÃO ───────────────────────────────────────── */
+function AbaPersonalizacao({ custoBase, margemBase }) {
+  const [modelagem, setModelagem]         = useState(false);
+  const [hModelagem, setHModelagem]       = useState(1.5);
+  const [valorHModelo, setValorHModelo]   = useState(80);
+  const [numRevisoes, setNumRevisoes]     = useState(2);
+  const [valorRevisao, setValorRevisao]   = useState(20);
+  const [usaArquivo, setUsaArquivo]       = useState(false);
+  const [licenca, setLicenca]             = useState(35);
+  const [posProc, setPosProc]             = useState(false);
+  const [tipoPos, setTipoPos]             = useState({ lixamento:false, pintura:false, verniz:false, montagem:false });
+  const [hPosProc, setHPosProc]           = useState(0.5);
+  const [valorHPos, setValorHPos]         = useState(50);
+  const [materialPos, setMaterialPos]     = useState(8);
+  const [embPremium, setEmbPremium]       = useState(false);
+  const [custoEmbP, setCustoEmbP]         = useState(12);
+  const [complexidade, setComplexidade]   = useState(15);
+  const [urgencia, setUrgencia]           = useState(false);
+  const [percUrgencia, setPercUrgencia]   = useState(30);
+  const [margemCustom, setMargemCustom]   = useState(margemBase + 40);
+  const [nomeCliente, setNomeCliente]     = useState("");
+  const [nomeProduto, setNomeProduto]     = useState("");
 
-  const cMod  = modelagem ? hMod*vlHMod + nRev*vlRev : 0;
-  const cArq  = arquivo   ? licenca : 0;
-  const cPos  = posProc   ? hPos*vlHPos + matPos : 0;
-  const cEmb  = embP      ? custoEmbP : 0;
-  const cCmx  = custoBase*(complex/100);
-  const sub   = custoBase+cMod+cArq+cPos+cEmb+cCmx;
-  const cUrg  = urgencia  ? sub*(percUrg/100) : 0;
-  const tot   = sub+cUrg;
-  const vMgm  = tot*(margem/100);
-  const preco = tot+vMgm;
-  const plus  = preco - custoBase*(1+margemBase/100);
+  const cModelagem    = modelagem ? hModelagem*valorHModelo + numRevisoes*valorRevisao : 0;
+  const cArquivo      = usaArquivo ? licenca : 0;
+  const cPosProc      = posProc ? hPosProc*valorHPos + materialPos : 0;
+  const cEmbP         = embPremium ? custoEmbP : 0;
+  const cComplexidade = custoBase * (complexidade/100);
+  const subtotal      = custoBase + cModelagem + cArquivo + cPosProc + cEmbP + cComplexidade;
+  const cUrgencia     = urgencia ? subtotal*(percUrgencia/100) : 0;
+  const totalCustom   = subtotal + cUrgencia;
+  const vMargem       = totalCustom*(margemCustom/100);
+  const precoFinal    = totalCustom + vMargem;
+  const adicional     = precoFinal - (custoBase*(1+margemBase/100));
 
   const tiposPos = [
-    {key:"lixamento",label:"Lixamento",icon:"handyman"},
-    {key:"pintura",  label:"Pintura",  icon:"palette"},
-    {key:"verniz",   label:"Verniz",   icon:"auto_awesome"},
-    {key:"montagem", label:"Montagem", icon:"build"},
+    { key:"lixamento", label:"Lixamento", icon:"🪚" },
+    { key:"pintura",   label:"Pintura",   icon:"🎨" },
+    { key:"verniz",    label:"Verniz",    icon:"✨" },
+    { key:"montagem",  label:"Montagem",  icon:"🔧" },
   ];
 
-  const bars = [
-    {l:"Impressão base",  v:custoBase,color:C.cobre},
-    {l:"Modelagem",       v:cMod,     color:C.terra},
-    {l:"Arquivo/licença", v:cArq,     color:C.leva},
-    {l:"Pós-proc.",       v:cPos,     color:C.mo},
-    {l:"Embalagem",       v:cEmb,     color:C.emb},
-    {l:"Complexidade",    v:cCmx,     color:C.solar},
-    ...(urgencia?[{l:"Urgência",v:cUrg,color:C.urg}]:[]),
-  ].filter(b=>b.v>0);
+  const bars2 = [
+    { label:"Custo base impressão",   value:custoBase,      color:COPPER },
+    { label:"Modelagem / design",     value:cModelagem,     color:COPPER_L },
+    { label:"Licença de arquivo",     value:cArquivo,       color:TERRA },
+    { label:"Pós-processamento",      value:cPosProc,       color:BLUE },
+    { label:"Embalagem premium",      value:cEmbP,          color:TERRA_D },
+    { label:"Complexidade (+suporte)",value:cComplexidade,  color:"#7F8CFF" },
+    ...(urgencia ? [{ label:"Taxa urgência", value:cUrgencia, color:DANGER }] : []),
+  ].filter(b => b.value > 0);
+
+  const inputText = {
+    width:"100%", padding:"10px 14px",
+    background:"rgba(242,234,216,0.045)",
+    border:"1px solid rgba(242,234,216,0.12)",
+    borderRadius:12, color:PERG, fontSize:13,
+    fontFamily:"'Inter',sans-serif", outline:"none", boxSizing:"border-box",
+    transition:"border-color .2s",
+  };
 
   return (
-    <div style={{ maxWidth:960, margin:"0 auto" }}>
-      <div style={{ display:"grid", gap:16 }} className="custom-grid">
-        <div>
-          {/* identificação */}
-          <Card title="Identificação do pedido" icon="badge" accent={C.cobre}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              {[{l:"Nome do cliente",value:cliente,set:setCliente,ph:"Ex: Maria Silva"},{l:"Peça / descrição",value:produto,set:setProduto,ph:"Ex: Crucifixo São Bento"}].map(f=>(
-                <div key={f.l}>
-                  <div style={{ fontSize:13, color:C.cinzaMed, marginBottom:6 }}>{f.l}</div>
-                  <input value={f.value} onChange={e=>f.set(e.target.value)} placeholder={f.ph}
-                    style={{ width:"100%", padding:"10px 12px", background:"rgba(242,234,216,0.04)", border:`1px solid ${C.brd}`, borderRadius:8, color:C.cinzaClr, fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
-                </div>
-              ))}
+    <div style={{ maxWidth:860, margin:"0 auto" }}>
+      {/* Identificação do pedido */}
+      <div style={{
+        ...CARD_BASE,
+        border:`1px solid ${COPPER_L}28`,
+        padding:"18px 20px", marginBottom:12,
+      }}>
+        <div style={{ fontFamily:"'Jost',sans-serif", fontSize:10, color:COPPER_L, letterSpacing:2, textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>
+          Identificação do Pedido Personalizado
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+          {[
+            { label:"Nome do cliente", value:nomeCliente, set:setNomeCliente, placeholder:"Ex: João Silva" },
+            { label:"Nome / descrição da peça", value:nomeProduto, set:setNomeProduto, placeholder:"Ex: Crucifixo com base" },
+          ].map(f => (
+            <div key={f.label}>
+              <div style={{ fontSize:12, color:"rgba(242,234,216,0.45)", marginBottom:6, fontFamily:"'Inter',sans-serif" }}>{f.label}</div>
+              <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder}
+                style={{ ...inputText, color:PERG }}
+              />
             </div>
-          </Card>
+          ))}
+        </div>
+      </div>
 
-          {/* custo base ref */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:`${C.cobre}08`, border:`1px solid ${C.brd}`, borderRadius:12, padding:"12px 20px", marginBottom:16 }}>
-            <div><div style={{ fontSize:12, color:C.cinzaMed }}>Custo base impressão</div><div style={{ fontSize:20, fontWeight:700, color:C.cinzaClr }}>{R$(custoBase)}</div></div>
-            <div style={{ textAlign:"right" }}><div style={{ fontSize:12, color:C.cinzaMed }}>Peça padrão ({margemBase}%)</div><div style={{ fontSize:14, fontWeight:600, color:C.cinzaMed }}>{R$(custoBase*(1+margemBase/100))}</div></div>
+      <div className="grid-main" style={{ display:"grid", gridTemplateColumns:"1fr", gap:0 }}>
+        <div>
+          {/* Custo base */}
+          <div style={{
+            ...CARD_BASE,
+            border:`1px solid ${COPPER_L}20`,
+            padding:"14px 18px", marginBottom:12,
+            display:"flex", justifyContent:"space-between", alignItems:"center",
+          }}>
+            <div>
+              <div style={{ fontSize:12, color:"rgba(242,234,216,0.40)", fontFamily:"'Inter',sans-serif" }}>Custo base (aba Custo &amp; Preço)</div>
+              <div style={{ fontSize:20, fontWeight:700, color:PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums", marginTop:4 }}>{fmt(custoBase)}</div>
+            </div>
+            <div style={{ fontSize:11, color:"rgba(242,234,216,0.35)", textAlign:"right", fontFamily:"'Inter',sans-serif" }}>
+              <div>Peça padrão: {fmt(custoBase*(1+margemBase/100))}</div>
+              <div style={{ color:"rgba(242,234,216,0.25)", marginTop:2 }}>margem base: {margemBase}%</div>
+            </div>
           </div>
 
-          <Card title="Modelagem & Design" icon="palette" accent={C.terra}>
-            <Toggle on={modelagem} set={setModelagem} label="Incluir modelagem / adaptação 3D" color={C.terra} />
-            {modelagem && (<>
-              <Field label="Horas de modelagem" value={hMod} onChange={setHMod} unit="h" step={0.25} color={C.terra} />
-              <Field label="Valor/hora modelagem" value={vlHMod} onChange={setVlHMod} unit="R$/h" step={10} color={C.terra} />
-              <Field label="Revisões inclusas" hint="rodadas de ajuste" value={nRev} onChange={setNRev} unit="×" step={1} />
-              <Field label="Custo por revisão extra" value={vlRev} onChange={setVlRev} unit="R$/×" step={5} />
-              <InfoBox color={C.terra}>Deixe claro ao cliente quantas revisões estão incluídas. Acima disso, cobra à parte — protege seu tempo.</InfoBox>
-            </>)}
+          <Card title="Modelagem & Design 3D" icon="🎨" accent={COPPER_L}>
+            <Toggle value={modelagem} onChange={setModelagem} label="Incluir modelagem / adaptação" color={COPPER_L} />
+            {modelagem && (
+              <>
+                <Field label="Horas de modelagem" value={hModelagem} onChange={setHModelagem} unit="h" step={0.25} highlight={COPPER_L} />
+                <Field label="Valor hora de modelagem" value={valorHModelo} onChange={setValorHModelo} unit="R$/h" step={10} highlight={COPPER_L} />
+                <Field label="Nº de revisões inclusas" hint="rodadas de ajuste" value={numRevisoes} onChange={setNumRevisoes} unit="x" step={1} />
+                <Field label="Valor por revisão extra" value={valorRevisao} onChange={setValorRevisao} unit="R$/x" step={5} />
+                <InfoBox color={COPPER_L}>💡 Defina quantas revisões estão inclusas no preço. Acima disso, cobre à parte — isso protege seu tempo e educa o cliente.</InfoBox>
+              </>
+            )}
           </Card>
 
-          <Card title="Licença de Arquivo 3D" icon="folder" accent={C.leva}>
-            <Toggle on={arquivo} set={setArquivo} label="Comprei arquivo de terceiro" color={C.leva} />
-            {arquivo && (<>
-              <Field label="Custo da licença" hint="valor pago" value={licenca} onChange={setLicenca} unit="R$" step={5} color={C.leva} />
-              <InfoBox color={C.leva}>Repasse 100% do custo da licença — é insumo direto do pedido, não seu custo.</InfoBox>
-            </>)}
+          <Card title="Licença de Arquivo 3D" icon="📁" accent={TERRA}>
+            <Toggle value={usaArquivo} onChange={setUsaArquivo} label="Comprei arquivo de terceiro" color={TERRA} />
+            {usaArquivo && (
+              <>
+                <Field label="Custo da licença" hint="valor pago pelo arquivo" value={licenca} onChange={setLicenca} unit="R$" step={5} highlight={TERRA} />
+                <InfoBox color={TERRA}>📁 Sempre repasse 100% do custo da licença ao cliente — é um insumo direto do pedido.</InfoBox>
+              </>
+            )}
           </Card>
 
-          <Card title="Complexidade de Impressão" icon="settings" accent={C.solar}>
-            <Field label="Acréscimo de complexidade" hint="suportes, geometria difícil" value={complex} onChange={setComplex} unit="%" step={5} color={C.solar} />
-            <InfoBox color={C.solar}>Peças personalizadas têm mais suporte e desperdício. 10–20% é faixa saudável.</InfoBox>
+          <Card title="Complexidade de Impressão" icon="⚙️" accent={COPPER}>
+            <Field label="Acréscimo por complexidade" hint="suporte extra, geometria difícil" value={complexidade} onChange={setComplexidade} unit="%" step={5} highlight={COPPER} />
+            <InfoBox color={COPPER}>⚙️ Peças personalizadas costumam ter mais suporte e material desperdiçado. 10–20% é uma faixa saudável.</InfoBox>
           </Card>
 
-          <Card title="Pós-processamento" icon="auto_awesome" accent={C.mo}>
-            <Toggle on={posProc} set={setPosProc} label="Inclui acabamento especial" color={C.mo} />
-            {posProc && (<>
-              <div style={{ marginBottom:16 }}>
-                <div style={{ fontSize:13, color:C.cinzaMed, marginBottom:10 }}>Tipos de acabamento:</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                  {tiposPos.map(t=>(
-                    <button key={t.key} onClick={()=>setTipoPos(p=>({...p,[t.key]:!p[t.key]}))}
-                      style={{ padding:"10px 14px", borderRadius:10, cursor:"pointer", border:`1px solid ${tipoPos[t.key]?C.mo+"60":C.brd}`, background:tipoPos[t.key]?`${C.mo}12`:"transparent", display:"flex", alignItems:"center", gap:8, fontSize:13, color:tipoPos[t.key]?C.mo:C.cinzaMed, fontFamily:"inherit" }}>
-                      <Icon n={t.icon} s={15} c={tipoPos[t.key]?C.mo:C.cinzaMed} />{t.label}
-                    </button>
-                  ))}
+          <Card title="Pós-processamento & Acabamento" icon="✨" accent={BLUE}>
+            <Toggle value={posProc} onChange={setPosProc} label="Inclui acabamento especial" color={BLUE} />
+            {posProc && (
+              <>
+                <div style={{ marginBottom:14 }}>
+                  <div style={{ fontSize:12, color:"rgba(242,234,216,0.45)", marginBottom:10, fontFamily:"'Inter',sans-serif" }}>Tipo de acabamento:</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                    {tiposPos.map(t => (
+                      <div key={t.key}
+                        onClick={() => setTipoPos(p => ({ ...p, [t.key]:!p[t.key] }))}
+                        style={{
+                          padding:"10px 14px", borderRadius:12, cursor:"pointer",
+                          border:`1px solid ${tipoPos[t.key] ? BLUE+"50" : "rgba(242,234,216,0.08)"}`,
+                          background: tipoPos[t.key] ? `${BLUE}12` : "transparent",
+                          display:"flex", alignItems:"center", gap:8,
+                          fontSize:13, color: tipoPos[t.key] ? BLUE : "rgba(242,234,216,0.40)",
+                          transition:"all .2s", fontFamily:"'Inter',sans-serif",
+                        }}
+                      >
+                        <span>{t.icon}</span>{t.label}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <Field label="Horas de acabamento" value={hPos} onChange={setHPos} unit="h" step={0.25} />
-              <Field label="Valor/hora acabamento" value={vlHPos} onChange={setVlHPos} unit="R$/h" step={5} />
-              <Field label="Material de acabamento" hint="tinta, lixa, verniz…" value={matPos} onChange={setMatPos} unit="R$" step={1} />
-            </>)}
+                <Field label="Horas de acabamento" value={hPosProc} onChange={setHPosProc} unit="h" step={0.25} />
+                <Field label="Valor hora acabamento" value={valorHPos} onChange={setValorHPos} unit="R$/h" step={5} />
+                <Field label="Material de acabamento" hint="tinta, lixa, verniz…" value={materialPos} onChange={setMaterialPos} unit="R$" step={1} />
+              </>
+            )}
           </Card>
 
-          <Card title="Embalagem Premium" icon="card_giftcard" accent={C.emb}>
-            <Toggle on={embP} set={setEmbP} label="Embalagem especial para presente" color={C.emb} />
-            {embP && (<>
-              <Field label="Custo da embalagem" hint="caixa, laço, tag…" value={custoEmbP} onChange={setCustoEmbP} unit="R$" step={1} color={C.emb} />
-              <InfoBox color={C.emb}>Embalagem premium justifica um preço percebido muito maior. Invista nisso em pedidos de presente.</InfoBox>
-            </>)}
+          <Card title="Embalagem Premium Personalizada" icon="🎁" accent={TERRA_D}>
+            <Toggle value={embPremium} onChange={setEmbPremium} label="Embalagem especial para presente/cliente" color={TERRA_D} />
+            {embPremium && (
+              <>
+                <Field label="Custo da embalagem premium" hint="caixa, laço, papel, tag…" value={custoEmbP} onChange={setCustoEmbP} unit="R$" step={1} highlight={TERRA_D} />
+                <InfoBox color={TERRA_D}>🎁 Embalagem premium justifica um preço percebido muito maior — invista nisso para clientes de presente.</InfoBox>
+              </>
+            )}
           </Card>
 
-          <Card title="Taxa de Urgência" icon="bolt" accent={C.urg}>
-            <Toggle on={urgencia} set={setUrgencia} label="Pedido urgente / prazo reduzido" color={C.urg} />
-            {urgencia && (<>
-              <Field label="Adicional de urgência" value={percUrg} onChange={setPercUrg} unit="%" step={5} color={C.urg} />
-              <InfoBox color={C.urg}>20–50% é prática comum. Cobre reorganização de fila e pressão operacional.</InfoBox>
-            </>)}
+          <Card title="Taxa de Urgência" icon="⚡" accent={DANGER}>
+            <Toggle value={urgencia} onChange={setUrgencia} label="Pedido urgente / prazo reduzido" color={DANGER} />
+            {urgencia && (
+              <>
+                <Field label="Adicional de urgência" value={percUrgencia} onChange={setPercUrgencia} unit="%" step={5} highlight={DANGER} />
+                <InfoBox color={DANGER}>⚡ Urgência tem valor. 20–50% é prática comum. Isso cobre reorganização de fila e estresse operacional.</InfoBox>
+              </>
+            )}
           </Card>
 
-          <Card title="Margem para Personalizado" icon="diamond" accent={C.cobre}>
-            <Field label="Margem do pedido personalizado" value={margem} onChange={setMargem} unit="%" step={5} color={C.cobre} />
-            <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:`1px solid ${C.brd}`, marginTop:8 }}>
-              <span style={{ fontSize:13, color:C.cinzaMed }}>Margem padrão</span>
-              <span style={{ fontSize:13, fontWeight:600, color:C.cinzaMed }}>{margemBase}%</span>
+          <Card title="Margem de Personalização" icon="💎" accent={COPPER}>
+            <Field label="Margem para pedido personalizado" value={margemCustom} onChange={setMargemCustom} unit="%" step={5} highlight={COPPER} />
+            <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:"1px solid rgba(242,234,216,0.07)", marginTop:8 }}>
+              <span style={{ fontSize:12, color:"rgba(242,234,216,0.35)", fontFamily:"'Inter',sans-serif" }}>Margem base (padrão)</span>
+              <span style={{ fontSize:12, color:"rgba(242,234,216,0.35)", fontFamily:"'Inter',sans-serif" }}>{margemBase}%</span>
             </div>
             <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0" }}>
-              <span style={{ fontSize:13, color:C.cobre }}>Prêmio da personalização</span>
-              <span style={{ fontSize:13, fontWeight:700, color:C.cobre }}>+{margem-margemBase}%</span>
+              <span style={{ fontSize:12, color:COPPER, fontFamily:"'Inter',sans-serif" }}>Prêmio da personalização</span>
+              <span style={{ fontSize:12, color:COPPER, fontFamily:"'Inter',sans-serif" }}>+{margemCustom - margemBase}%</span>
             </div>
-            <InfoBox color={C.cobre}>Personalização é exclusividade. Margem 30–50% maior que o padrão é justa e esperada.</InfoBox>
+            <InfoBox color={COPPER}>💎 Personalização é exclusividade. Uma margem 30–50% maior que o padrão é justa e esperada pelo mercado premium.</InfoBox>
           </Card>
         </div>
 
-        {/* painel resultado */}
+        {/* Painel resultado personalização */}
         <div className="sticky-col">
-          <div style={{ background:`linear-gradient(160deg,${C.noturno},${C.negro} 80%)`, border:`1px solid ${C.brd2}`, borderRadius:20, padding:24, position:"sticky", top:24 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:24 }}>
-              <Icon n="diamond" s={16} c={C.cobre} />
-              <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", color:C.cobre, textTransform:"uppercase" }}>Orçamento Personalizado</span>
+          <div style={{
+            ...CARD_BASE,
+            border:`1px solid ${COPPER}30`,
+            boxShadow:`0 28px 80px rgba(0,0,0,0.42), 0 0 32px rgba(201,130,68,0.10)`,
+            padding:"24px 22px",
+          }}>
+            <div style={{ fontFamily:"'Jost',sans-serif", fontSize:10, letterSpacing:2.5, color:COPPER, textTransform:"uppercase", fontWeight:700, marginBottom:18 }}>
+              💎 Orçamento Personalizado
             </div>
 
-            {(cliente||produto) && (
-              <div style={{ background:`${C.cobre}0C`, borderRadius:12, padding:"12px 16px", marginBottom:16 }}>
-                {cliente&&<div style={{ fontSize:14, color:C.cinzaClr, display:"flex", alignItems:"center", gap:8 }}><Icon n="person" s={14} c={C.cinzaMed}/>{cliente}</div>}
-                {produto&&<div style={{ fontSize:13, color:C.cinzaMed, marginTop:4, display:"flex", alignItems:"center", gap:8 }}><Icon n="inventory_2" s={13} c={C.cinzaMed}/>{produto}</div>}
+            {(nomeCliente || nomeProduto) && (
+              <div style={{
+                background:`${COPPER}0C`, borderRadius:12, padding:"12px 14px",
+                marginBottom:16, border:`1px solid ${COPPER}18`,
+              }}>
+                {nomeCliente  && <div style={{ fontSize:13, color:PERG, fontFamily:"'Inter',sans-serif" }}>👤 {nomeCliente}</div>}
+                {nomeProduto  && <div style={{ fontSize:12, color:"rgba(242,234,216,0.45)", marginTop:3, fontFamily:"'Inter',sans-serif" }}>📦 {nomeProduto}</div>}
               </div>
             )}
 
-            {/* linhas */}
             {[
-              {l:"Impressão base",    v:custoBase, show:true},
-              {l:"Modelagem & design",v:cMod,      show:modelagem&&cMod>0},
-              {l:"Licença de arquivo",v:cArq,      show:arquivo},
-              {l:"Pós-processamento", v:cPos,      show:posProc},
-              {l:"Embalagem premium", v:cEmb,      show:embP},
-              {l:"Complexidade",      v:cCmx,      show:complex>0},
-              {l:"Taxa de urgência",  v:cUrg,      show:urgencia},
-            ].filter(r=>r.show).map(r=>(
-              <div key={r.l} style={{ display:"flex", justifyContent:"space-between", padding:"9px 0", borderBottom:`1px solid ${C.brd}` }}>
-                <span style={{ fontSize:14, color:C.cinzaClr }}>{r.l}</span>
-                <span style={{ fontSize:14, fontWeight:600, color:C.perg }}>{R$(r.v)}</span>
+              { l:"Custo base impressão",    v:custoBase,       show:true },
+              { l:"Modelagem & design",      v:cModelagem,      show:modelagem && cModelagem > 0 },
+              { l:"Licença de arquivo",      v:cArquivo,        show:usaArquivo },
+              { l:"Pós-processamento",       v:cPosProc,        show:posProc },
+              { l:"Embalagem premium",       v:cEmbP,           show:embPremium },
+              { l:"Complexidade (+suporte)", v:cComplexidade,   show:complexidade > 0 },
+              { l:"Taxa de urgência",        v:cUrgencia,       show:urgencia },
+            ].filter(r => r.show).map(r => (
+              <div key={r.l} style={{
+                display:"flex", justifyContent:"space-between",
+                padding:"9px 0", borderBottom:"1px solid rgba(242,234,216,0.06)",
+              }}>
+                <span style={{ fontSize:13, color:"rgba(242,234,216,0.60)", fontFamily:"'Inter',sans-serif" }}>{r.l}</span>
+                <span style={{ fontSize:13, color:PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{fmt(r.v)}</span>
               </div>
             ))}
 
-            <div style={{ padding:"12px 0", borderTop:`1px solid ${C.brd2}`, display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 }}>
-              <span style={{ fontSize:15, fontWeight:700, color:C.perg }}>Custo total</span>
-              <span style={{ fontSize:20, fontWeight:700 }}>{R$(tot)}</span>
-            </div>
-            <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0 16px" }}>
-              <span style={{ fontSize:13, color:C.cinzaMed }}>Margem ({margem}%)</span>
-              <span style={{ fontSize:13, color:C.cinzaMed }}>+ {R$(vMgm)}</span>
+            <div style={{ marginTop:10 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(242,234,216,0.08)" }}>
+                <span style={{ fontWeight:700, color:PERG, fontFamily:"'Inter',sans-serif" }}>Custo total personalizado</span>
+                <span style={{ fontSize:15, fontWeight:700, color:PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{fmt(totalCustom)}</span>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0" }}>
+                <span style={{ fontSize:13, color:"rgba(242,234,216,0.35)", fontFamily:"'Inter',sans-serif" }}>Margem ({margemCustom}%)</span>
+                <span style={{ fontSize:13, color:"rgba(242,234,216,0.35)", fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>+ {fmt(vMargem)}</span>
+              </div>
             </div>
 
-            {/* preço hero */}
-            <div style={{ background:`linear-gradient(135deg,${C.cobre}22,${C.terra}12)`, border:`1px solid ${C.cobre}50`, borderRadius:16, padding:"24px 20px", textAlign:"center", marginBottom:24 }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.14em", color:C.cobre, textTransform:"uppercase", marginBottom:8 }}>Preço Final Personalizado</div>
-              <div style={{ fontSize:40, fontWeight:700, color:C.perg, letterSpacing:"-0.02em", lineHeight:1 }}>{R$(preco)}</div>
-              <div style={{ fontSize:12, color:C.cinzaMed, marginTop:8 }}>por peça única</div>
+            {/* Preço final */}
+            <div style={{
+              marginTop:10,
+              background:`linear-gradient(135deg, ${TERRA_D}, ${COPPER}, ${COPPER_L})`,
+              borderRadius:16, padding:"20px 18px", textAlign:"center",
+              boxShadow:`0 14px 32px rgba(181,107,58,0.28)`,
+            }}>
+              <div style={{ fontSize:10, letterSpacing:2.5, color:"rgba(255,255,255,0.70)", fontFamily:"'Jost',sans-serif", textTransform:"uppercase", marginBottom:8, fontWeight:700 }}>
+                Preço Final Personalizado
+              </div>
+              <div style={{ fontSize:40, fontWeight:700, letterSpacing:-1, color:"#fff", fontFamily:"'Jost',sans-serif", fontVariantNumeric:"tabular-nums" }}>
+                {fmt(precoFinal)}
+              </div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.55)", marginTop:6, fontFamily:"'Inter',sans-serif" }}>por peça única</div>
             </div>
 
             {/* vs padrão */}
-            <div style={{ background:"rgba(242,234,216,0.02)", borderRadius:12, padding:"16px", marginBottom:24 }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", color:C.cinzaMed, marginBottom:12, textTransform:"uppercase" }}>Comparativo</div>
+            <div style={{ marginTop:16, background:"rgba(242,234,216,0.03)", borderRadius:14, padding:"14px 16px", border:"1px solid rgba(242,234,216,0.06)" }}>
+              <div style={{ fontSize:10, color:"rgba(242,234,216,0.28)", fontFamily:"'Jost',sans-serif", letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>vs peça padrão</div>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:13, color:C.cinzaMed }}>Peça padrão ({margemBase}%)</span>
-                <span style={{ fontSize:13, fontWeight:600, color:C.cinzaMed }}>{R$(custoBase*(1+margemBase/100))}</span>
+                <span style={{ fontSize:12, color:"rgba(242,234,216,0.40)", fontFamily:"'Inter',sans-serif" }}>Peça padrão ({margemBase}% margem)</span>
+                <span style={{ fontSize:12, color:"rgba(242,234,216,0.40)", fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{fmt(custoBase*(1+margemBase/100))}</span>
               </div>
               <div style={{ display:"flex", justifyContent:"space-between" }}>
-                <span style={{ fontSize:14, fontWeight:600, color:C.cobre }}>Valor adicional</span>
-                <span style={{ fontSize:16, fontWeight:700, color:C.cobre }}>+{R$(plus)}</span>
+                <span style={{ fontSize:13, color:COPPER, fontWeight:600, fontFamily:"'Inter',sans-serif" }}>Valor adicional cobrado</span>
+                <span style={{ fontSize:14, color:COPPER, fontWeight:700, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>+ {fmt(adicional)}</span>
               </div>
             </div>
 
-            {/* bars */}
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.1em", color:C.cinzaMed, textTransform:"uppercase", marginBottom:12 }}>Composição</div>
-            {bars.map(b=><Bar key={b.l} label={b.l} value={b.v} total={tot} color={b.color}/>)}
+            {/* Composição */}
+            <div style={{ marginTop:22 }}>
+              <div style={{ fontSize:10, letterSpacing:2, color:"rgba(242,234,216,0.28)", fontFamily:"'Jost',sans-serif", textTransform:"uppercase", marginBottom:14, fontWeight:700 }}>Composição</div>
+              {bars2.map(b => <Bar key={b.label} {...b} total={totalCustom} />)}
+            </div>
 
-            {/* resumo */}
-            <div style={{ marginTop:24, background:`${C.cobre}08`, border:`1px solid ${C.brd}`, borderRadius:12, padding:"16px" }}>
-              <div style={{ fontSize:11, fontWeight:700, color:C.cobre, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12, display:"flex", alignItems:"center", gap:6 }}><Icon n="assignment" s={14} c={C.cobre}/>Resumo</div>
-              {[{l:"Peça base",v:R$(custoBase)},{l:"Serviços extras",v:R$(tot-custoBase)},{l:"Margem",v:`${margem}%`},{l:"Preço final",v:R$(preco),d:true}].map(c=>(
-                <div key={c.l} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.cobre}12` }}>
-                  <span style={{ fontSize:13, color:c.d?C.perg:C.cinzaMed, fontWeight:c.d?700:400 }}>{c.l}</span>
-                  <span style={{ fontSize:13, fontWeight:c.d?700:600, color:c.d?C.cobre:C.cinzaMed }}>{c.v}</span>
+            {/* Resumo */}
+            <div style={{ marginTop:20, background:`${COPPER}0A`, border:`1px solid ${COPPER}1E`, borderRadius:14, padding:"16px 16px" }}>
+              <div style={{ fontSize:10, color:COPPER, fontFamily:"'Jost',sans-serif", letterSpacing:1.5, textTransform:"uppercase", marginBottom:14, fontWeight:700 }}>📋 Resumo do Orçamento</div>
+              {[
+                { l:"Peça base",       v:fmt(custoBase) },
+                { l:"Serviços extra",  v:fmt(totalCustom-custoBase) },
+                { l:"Margem aplicada", v:`${margemCustom}%` },
+                { l:"Preço final",     v:fmt(precoFinal), destaque:true },
+              ].map(c => (
+                <div key={c.l} style={{
+                  display:"flex", justifyContent:"space-between",
+                  padding:"6px 0", borderBottom:`1px solid ${COPPER}12`,
+                }}>
+                  <span style={{ fontSize:12, color: c.destaque ? PERG : "rgba(242,234,216,0.40)", fontWeight: c.destaque ? 700 : 400, fontFamily:"'Inter',sans-serif" }}>{c.l}</span>
+                  <span style={{ fontSize:12, color: c.destaque ? COPPER : "rgba(242,234,216,0.40)", fontWeight: c.destaque ? 700 : 400, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{c.v}</span>
                 </div>
               ))}
             </div>
@@ -536,363 +594,535 @@ function AbaPersonalizado({ custoBase, margemBase }) {
   );
 }
 
-/* ── APP PRINCIPAL ───────────────────────────────────────────── */
+/* ── APP PRINCIPAL ────────────────────────────────────────────── */
 export default function Calc3D() {
-  const [aba,        setAba]       = useState("custo");
-  const [usaLeva,    setUsaLeva]   = useState(false);
-  const [pecasLeva,  setPecasLeva] = useState(4);
-  const [horasLeva,  setHorasLeva] = useState(8);
-  const [gramas,     setGramas]    = useState(50);
-  const [precoKg,    setPrecoKg]   = useState(120);
-  const [falha,      setFalha]     = useState(10);
-  const [horas,      setHoras]     = useState(3);
-  const [watts,      setWatts]     = useState(350);
-  const [usaSolar,   setUsaSolar]  = useState(false);
-  const [kwhRede,    setKwhRede]   = useState(0.78);
-  const [kwhSolar,   setKwhSolar]  = useState(0.15);
-  const [percSolar,  setPercSolar] = useState(80);
-  const [precoImp,   setPrecoImp]  = useState(4500);
-  const [vidaUtil,   setVidaUtil]  = useState(5000);
-  const [precoBico,  setPrecoBico] = useState(28);
-  const [vidaBico,   setVidaBico]  = useState(500);
-  const [precoPlaca, setPrecoPlaca]= useState(90);
-  const [vidaPlaca,  setVidaPlaca] = useState(300);
-  const [usaEmb,     setUsaEmb]    = useState(false);
-  const [precoEmb,   setPrecoEmb]  = useState(3.5);
-  const [freteEmb,   setFreteEmb]  = useState(0);
-  const [usaMO,      setUsaMO]     = useState(false);
-  const [valorHora,  setValorHora] = useState(50);
-  const [minPrep,    setMinPrep]   = useState(15);
-  const [minIni,     setMinIni]    = useState(8);
-  const [minMon,     setMinMon]    = useState(5);
-  const [minPos,     setMinPos]    = useState(15);
-  const [margem,     setMargem]    = useState(40);
+  const [aba, setAba]               = useState("custo");
+  const [usaLeva, setUsaLeva]       = useState(false);
+  const [pecasLeva, setPecasLeva]   = useState(4);
+  const [horasLeva, setHorasLeva]   = useState(8);
+  const [gramas, setGramas]         = useState(50);
+  const [precoKg, setPrecoKg]       = useState(120);
+  const [falha, setFalha]           = useState(10);
+  const [horas, setHoras]           = useState(3);
+  const [watts, setWatts]           = useState(350);
+  const [usaSolar, setUsaSolar]     = useState(false);
+  const [kwhRede, setKwhRede]       = useState(0.78);
+  const [kwhSolar, setKwhSolar]     = useState(0.15);
+  const [percSolar, setPercSolar]   = useState(80);
+  const [precoImp, setPrecoImp]     = useState(4500);
+  const [vidaUtil, setVidaUtil]     = useState(5000);
+  const [precoBico, setPrecoBico]   = useState(28);
+  const [vidaBico, setVidaBico]     = useState(500);
+  const [precoPlaca, setPrecoPlaca] = useState(90);
+  const [vidaPlaca, setVidaPlaca]   = useState(300);
+  const [usaEmb, setUsaEmb]         = useState(false);
+  const [precoEmb, setPrecoEmb]     = useState(3.5);
+  const [freteEmb, setFreteEmb]     = useState(0);
+  const [usaMO, setUsaMO]           = useState(false);
+  const [valorHora, setValorHora]   = useState(50);
+  const [minPreparo, setMinPreparo] = useState(15);
+  const [minInicio, setMinInicio]   = useState(8);
+  const [minMonitor, setMinMonitor] = useState(5);
+  const [minPos, setMinPos]         = useState(15);
+  const [margem, setMargem]         = useState(40);
 
-  const div        = usaLeva ? pecasLeva : 1;
-  const kwhEf      = usaSolar ? kwhSolar*percSolar/100 + kwhRede*(1-percSolar/100) : kwhRede;
-  const eKwh       = (watts/1000)*(usaLeva?horasLeva:horas);
-  const cEn        = (eKwh*kwhEf)/div;
-  const cEnSemSol  = (eKwh*kwhRede)/div;
-  const econSol    = cEnSemSol - cEn;
-  const gEf        = gramas*(1+falha/100);
-  const cFil       = (gEf/1000)*precoKg;
-  const cDep       = ((precoImp/vidaUtil)*(usaLeva?horasLeva:horas))/div;
-  const cCons      = ((precoBico/vidaBico)*(usaLeva?horasLeva:horas) + precoPlaca/vidaPlaca)/div;
-  const cEmb       = usaEmb ? precoEmb+freteEmb : 0;
-  const minAt      = minPrep+minIni+minMon+minPos;
-  const cMO        = usaMO ? (valorHora*(minAt/60))/div : 0;
-  const custoSetup = usaMO ? (valorHora*((minPrep+minIni)/60))/div : 0;
-  const total      = cFil+cEn+cDep+cCons+cEmb+cMO;
-  const totSemSol  = cFil+cEnSemSol+cDep+cCons+cEmb+cMO;
-  const precoVenda = total*(1+margem/100);
+  const horasEfetivas    = usaLeva ? horasLeva / pecasLeva : horas;
+  const divisorLeva      = usaLeva ? pecasLeva : 1;
+  const kwhEfetivo       = usaSolar ? (kwhSolar*percSolar/100)+(kwhRede*(1-percSolar/100)) : kwhRede;
+  const energiaKwh       = usaLeva ? (watts/1000)*horasLeva : (watts/1000)*horas;
+  const cEnergia         = (energiaKwh*kwhEfetivo) / divisorLeva;
+  const cEnergiaSemSolar = (energiaKwh*kwhRede) / divisorLeva;
+  const economiaSolar    = cEnergiaSemSolar - cEnergia;
+  const gramasEfetivas   = gramas*(1+falha/100);
+  const cFilamento       = (gramasEfetivas/1000)*precoKg;
+  const cDeprec          = ((precoImp/vidaUtil)*(usaLeva ? horasLeva : horas)) / divisorLeva;
+  const cConsumivel      = ((precoBico/vidaBico)*(usaLeva ? horasLeva : horas) + precoPlaca/vidaPlaca) / divisorLeva;
+  const cEmb             = usaEmb ? precoEmb+freteEmb : 0;
+  const minAtivo         = minPreparo + minInicio + minMonitor + minPos;
+  const cMO              = usaMO ? (valorHora*(minAtivo/60)) / divisorLeva : 0;
+  const custoSetup       = usaMO ? (valorHora*((minPreparo+minInicio)/60)) / divisorLeva : 0;
+  const total            = cFilamento+cEnergia+cDeprec+cConsumivel+cEmb+cMO;
+  const totalSemSolar    = cFilamento+cEnergiaSemSolar+cDeprec+cConsumivel+cEmb+cMO;
+  const precoVenda       = total*(1+margem/100);
 
-  const barsResult = [
-    {label:"Filamento PLA", v:cFil,  color:C.cobre,  sub:`${N(gEf,1)}g · individual`},
-    {label:"Energia",       v:cEn,   color:usaSolar?C.solar:"#E8C060", solar:usaSolar, sub:usaSolar?`${N(kwhEf,3)}/kWh`:`${N(kwhRede,2)}/kWh`},
-    {label:"Depreciação",   v:cDep,  color:C.leva,   sub:usaLeva?`${horasLeva}h ÷ ${pecasLeva}`:`${horas}h`},
-    {label:"Consumíveis",   v:cCons, color:C.terra,  sub:"Bico + placa"},
-    ...(usaEmb?[{label:"Embalagem",v:cEmb,color:C.emb,sub:"por unidade"}]:[]),
-    ...(usaMO ?[{label:"Mão de obra",v:cMO,color:C.mo,sub:`${minAt} min ativos`}]:[]),
-  ];
-
-  const tabs = [
-    {id:"custo",   label:"Custo & Preço", icon:"calculate"},
-    {id:"revenda", label:"Revenda",       icon:"storefront"},
-    {id:"custom",  label:"Personalizado", icon:"diamond"},
+  const bars = [
+    { label:"Filamento PLA", value:cFilamento,  color:COPPER },
+    { label:"Energia",       value:cEnergia,    color: usaSolar ? COPPER_L : TERRA },
+    { label:"Depreciação",   value:cDeprec,     color:TERRA_D },
+    { label:"Consumíveis",   value:cConsumivel, color:BLUE },
+    ...(usaEmb ? [{ label:"Embalagem",   value:cEmb, color:"#7F8CFF" }] : []),
+    ...(usaMO  ? [{ label:"Mão de obra", value:cMO,  color:"#A78BFA" }] : []),
   ];
 
   return (
-    <div style={{ minHeight:"100vh", background:C.negro, color:C.perg, fontFamily:"'Jost', sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <div style={{
+      minHeight:"100vh", background:BG,
+      backgroundImage:`
+        radial-gradient(circle at top right, rgba(201,130,68,0.10), transparent 32%),
+        radial-gradient(circle at bottom left, rgba(26,30,46,0.70), transparent 42%)
+      `,
+      fontFamily:"'Inter',sans-serif", color:PERG,
+      padding:"32px 16px 80px",
+    }}>
+      <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <style>{`
-        *{box-sizing:border-box;}
+        @media(min-width:720px){
+          .grid-main { grid-template-columns:1fr 1fr !important; gap:20px !important; align-items:start !important; }
+          .sticky-col { position:sticky !important; top:24px !important; }
+        }
         input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
-        input[type=number]{-moz-appearance:textfield;}
-        ::placeholder{color:${C.cinzaMed}!important;}
-
-        /* 2-col layout desktop */
-        @media(min-width:768px){
-          .main-grid{display:grid!important;grid-template-columns:1fr 400px!important;gap:24px!important;align-items:start!important;}
-          .custom-grid{display:grid!important;grid-template-columns:1fr 380px!important;gap:24px!important;align-items:start!important;}
-          .sticky-col{position:sticky!important;top:24px!important;}
-          .header-logo{height:40px!important;}
-          .tab-label{display:inline!important;}
-        }
-        @media(max-width:767px){
-          .header-logo{height:28px!important;}
-          .tab-label{display:none!important;}
-          .tab-bar button{padding:12px!important;}
-        }
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+        input[type=number] { -moz-appearance:textfield; }
+        input::placeholder { color: rgba(242,234,216,0.28); }
+        input:focus { border-color: rgba(201,130,68,0.52) !important; box-shadow: 0 0 0 3px rgba(201,130,68,0.09); }
       `}</style>
 
-      {/* ── HEADER ─────────────────────────────────────────── */}
-      <header style={{ borderBottom:`1px solid ${C.brd}`, background:`${C.noturno}80`, backdropFilter:"blur(16px)", position:"sticky", top:0, zIndex:100 }}>
-        <div style={{ maxWidth:1024, margin:"0 auto", padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:24 }}>
-          <img src="/logo-light-horizontal.svg" alt="Talharia" className="header-logo" style={{ height:32 }} />
-          <div style={{ textAlign:"right" }}>
-            <div style={{ fontSize:12, fontWeight:500, color:C.cinzaMed }}>Calculadora de Custos</div>
-            <div style={{ fontSize:11, color:C.cinzaEsc, marginTop:2 }}>Impressão 3D · Goiânia-GO</div>
-          </div>
+      {/* Header */}
+      <div style={{ textAlign:"center", marginBottom:36 }}>
+        <div style={{
+          display:"inline-flex", alignItems:"center", gap:8,
+          background:"rgba(201,130,68,0.10)",
+          border:`1px solid rgba(201,130,68,0.22)`,
+          borderRadius:100, padding:"5px 16px", marginBottom:18,
+        }}>
+          <span style={{ width:6, height:6, borderRadius:"50%", background:COPPER, display:"inline-block", flexShrink:0 }} />
+          <span style={{ fontSize:10, letterSpacing:2.5, color:COPPER, fontFamily:"'Jost',sans-serif", textTransform:"uppercase", fontWeight:700 }}>
+            Anycubic Kobra 3 V2 · PLA · Goiânia — GO
+          </span>
         </div>
-      </header>
-
-      {/* ── HERO ───────────────────────────────────────────── */}
-      <div style={{ borderBottom:`1px solid ${C.brd}`, background:`linear-gradient(180deg, ${C.noturno}40 0%, transparent 100%)` }}>
-        <div style={{ maxWidth:1024, margin:"0 auto", padding:"48px 24px 40px", textAlign:"center" }}>
-          <Pill color={C.cobre}><Icon n="precision_manufacturing" s={11} c={C.cobre}/>Bambu Lab A1 Combo · PLA</Pill>
-          <h1 style={{ fontSize:32, fontWeight:700, margin:"16px 0 8px", letterSpacing:"-0.02em", lineHeight:1.2 }}>
-            Calculadora de Custos<br />
-            <span style={{ color:C.cobre }}>Impressão 3D</span>
-          </h1>
-          <p style={{ fontSize:14, color:C.cinzaMed, margin:0 }}>
-            Equatorial Goiás · R$0,78/kWh · Reajuste out/2025
-          </p>
-        </div>
+        <h1 style={{ fontSize:30, fontWeight:700, margin:0, letterSpacing:-0.5, lineHeight:1.2, color:PERG, fontFamily:"'Jost',sans-serif" }}>
+          Calculadora de Custos<br />
+          <span style={{ color:COPPER }}>Impressão 3D</span>
+        </h1>
+        <p style={{ color:"rgba(242,234,216,0.36)", fontSize:13, marginTop:10, fontFamily:"'Inter',sans-serif" }}>
+          Equatorial Goiás · R$0,78/kWh · Reajuste out/2025
+        </p>
       </div>
 
-      {/* ── TABS ───────────────────────────────────────────── */}
-      <div style={{ position:"sticky", top:65, zIndex:90, borderBottom:`1px solid ${C.brd}`, background:`${C.negro}E0`, backdropFilter:"blur(16px)" }}>
-        <div style={{ maxWidth:1024, margin:"0 auto", padding:"0 24px" }}>
-          <div className="tab-bar" style={{ display:"flex", gap:4 }}>
-            {tabs.map(t => {
-              const ac = t.id==="custo"?C.cobre : t.id==="revenda"?C.terra : C.cobre;
-              return (
-                <button key={t.id} onClick={()=>setAba(t.id)}
-                  style={{ flex:1, maxWidth:200, padding:"14px 8px", border:"none", background:"transparent", color:aba===t.id?ac:C.cinzaMed, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", borderBottom:aba===t.id?`2px solid ${ac}`:"2px solid transparent", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"all .2s" }}>
-                  <Icon n={t.icon} s={16} c={aba===t.id?ac:C.cinzaMed} />
-                  <span className="tab-label">{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {/* Abas */}
+      <div style={{
+        maxWidth:860, margin:"0 auto 20px",
+        display:"flex",
+        ...CARD_BASE,
+        padding:5, gap:4,
+      }}>
+        <TabBtn active={aba==="custo"}   onClick={() => setAba("custo")}   color={COPPER}>⚙️ Custo</TabBtn>
+        <TabBtn active={aba==="revenda"} onClick={() => setAba("revenda")} color={TERRA}>📦 Revenda</TabBtn>
+        <TabBtn active={aba==="custom"}  onClick={() => setAba("custom")}  color={COPPER_L}>💎 Personalizado</TabBtn>
       </div>
 
-      {/* ── CONTEÚDO ───────────────────────────────────────── */}
-      <main style={{ maxWidth:1024, margin:"0 auto", padding:"32px 24px 96px" }}>
-
-        {/* ABA CUSTO */}
-        {aba==="custo" && (
-          <div className="main-grid" style={{ display:"grid", gridTemplateColumns:"1fr", gap:0 }}>
-            {/* inputs col */}
-            <div>
-              {/* MODO IMPRESSÃO */}
-              <Card title="Modo de Impressão" icon="print" accent={usaLeva?C.leva:C.cinzaMed}>
-                <Toggle on={usaLeva} set={setUsaLeva} label="Impressão em leva — múltiplas peças juntas" color={C.leva} />
-                {usaLeva ? (
-                  <>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
-                      {[
-                        {l:"Peças na leva",val:pecasLeva,set:setPecasLeva,min:1,sub:"peças simultâneas"},
-                        {l:"Tempo total",  val:horasLeva,set:setHorasLeva,min:0.25,step:0.25,sub:"horas totais"},
-                      ].map(f=>(
-                        <div key={f.l} style={{ background:`${C.leva}0C`, border:`1px solid ${C.leva}25`, borderRadius:12, padding:"16px", textAlign:"center" }}>
-                          <div style={{ fontSize:12, color:C.cinzaMed, marginBottom:8 }}>{f.l}</div>
-                          <input type="number" min={f.min||1} step={f.step||1} value={f.val}
-                            onChange={e=>f.set(Math.max(f.min||0, parseFloat(e.target.value)||1))}
-                            style={{ width:"100%", padding:"8px 4px", background:"transparent", border:`1px solid ${C.leva}35`, borderRadius:8, color:C.leva, fontFamily:"inherit", fontSize:28, fontWeight:700, textAlign:"center", outline:"none", WebkitAppearance:"none" }} />
-                          <div style={{ fontSize:11, color:C.cinzaMed, marginTop:8 }}>{f.sub}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ background:`${C.leva}08`, border:`1px solid ${C.leva}20`, borderRadius:12, padding:"16px" }}>
-                      <div style={{ fontSize:11, fontWeight:700, color:C.leva, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>Como os custos são divididos</div>
-                      {[
-                        {icon:"straighten",l:"Filamento",tipo:"individual",   desc:`cada peça usa ${N(gEf,1)}g`},
-                        {icon:"bolt",      l:"Energia",  tipo:"compartilhado",desc:`${horasLeva}h ÷ ${pecasLeva} peças`},
-                        {icon:"print",     l:"Depreciação",tipo:"compartilhado",desc:`${horasLeva}h ÷ ${pecasLeva} peças`},
-                        {icon:"build",     l:"Consumíveis",tipo:"compartilhado",desc:"rateado por peça"},
-                        {icon:"person",    l:"Mão de obra",tipo:"compartilhado",desc:`setup ÷ ${pecasLeva} peças`},
-                      ].map(r=>(
-                        <div key={r.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:`1px solid ${C.leva}10` }}>
-                          <span style={{ fontSize:13, color:C.cinzaMed, display:"flex", alignItems:"center", gap:8 }}><Icon n={r.icon} s={14} c={C.cinzaMed}/>{r.l}</span>
-                          <div style={{ textAlign:"right" }}>
-                            <Pill color={r.tipo==="individual"?C.cobre:C.leva}>{r.tipo}</Pill>
-                            <div style={{ fontSize:11, color:C.cinzaMed, marginTop:4 }}>{r.desc}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Field label="Tempo de impressão" hint="peça única" value={horas} onChange={setHoras} unit="h" step={0.25} />
-                    <InfoBox>Imprime várias peças juntas? Ative o Modo Leva para repartir os custos fixos corretamente.</InfoBox>
-                  </>
-                )}
-              </Card>
-
-              {/* FILAMENTO */}
-              <Card title="Filamento PLA" icon="straighten" accent={C.cobre}>
-                <Field label="Peso por peça" hint="gramas" value={gramas} onChange={setGramas} unit="g" step={0.5} />
-                <Field label="Preço do filamento" value={precoKg} onChange={setPrecoKg} unit="R$/kg" step={5} />
-                <Field label="Taxa de falha" hint="reimpressão" value={falha} onChange={setFalha} unit="%" step={1} />
-                <InfoBox color={C.cobre}>
-                  {usaLeva
-                    ? `${pecasLeva}× × ${N(gEf,1)}g = ${N(gEf*pecasLeva,1)}g total · ${R$(cFil)} por peça`
-                    : `Consumo real: ${N(gEf,1)}g · custo: ${R$(cFil)}`}
-                </InfoBox>
-              </Card>
-
-              {/* ENERGIA */}
-              <Card title="Energia Elétrica" icon={usaSolar?"wb_sunny":"bolt"} accent={usaSolar?C.solar:"#E8C060"}>
-                {!usaLeva && <Field label="Tempo de impressão" value={horas} onChange={setHoras} unit="h" step={0.25} />}
-                {usaLeva && (
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:`${C.leva}08`, borderRadius:8, padding:"10px 14px", marginBottom:16 }}>
-                    <span style={{ fontSize:13, color:C.cinzaMed }}>Tempo da leva</span>
-                    <span style={{ fontSize:15, fontWeight:700, color:C.leva }}>{horasLeva}h ÷ {pecasLeva} = {N(horasLeva/pecasLeva,2)}h/peça</span>
+      {/* ── ABA CUSTO ─────────────────────────────────────────── */}
+      {aba === "custo" && (
+        <div className="grid-main" style={{ maxWidth:860, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr", gap:0 }}>
+          <div>
+            {/* MODO LEVA */}
+            <Card title="Modo de Impressão" icon="🖨️" accent={usaLeva ? COPPER_L : "rgba(201,130,68,0.30)"}>
+              <Toggle value={usaLeva} onChange={setUsaLeva} label="Impressão em leva (múltiplas peças juntas)" color={COPPER_L} />
+              {usaLeva ? (
+                <>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, margin:"4px 0 16px" }}>
+                    {[
+                      { label:"Peças na leva", value:pecasLeva, set:(v) => setPecasLeva(Math.max(1,v)), sub:"peças simultâneas", color:COPPER_L },
+                      { label:"Tempo total da leva", value:horasLeva, set:setHorasLeva, sub:"horas no total", step:0.25, color:COPPER },
+                    ].map(f => (
+                      <div key={f.label}>
+                        <div style={{ fontSize:12, color:"rgba(242,234,216,0.45)", marginBottom:8, fontFamily:"'Inter',sans-serif" }}>{f.label}</div>
+                        <input type="number" min={1} step={f.step||1} value={f.value}
+                          onChange={e => f.set(parseFloat(e.target.value)||1)}
+                          style={{
+                            width:"100%", padding:"12px 14px",
+                            background:`${f.color}10`,
+                            border:`1px solid ${f.color}30`,
+                            borderRadius:14, color:f.color,
+                            fontFamily:"'Inter',sans-serif", fontSize:24, fontWeight:700,
+                            textAlign:"center", outline:"none", WebkitAppearance:"none",
+                          }}
+                        />
+                        <div style={{ fontSize:10, color:"rgba(242,234,216,0.28)", marginTop:5, textAlign:"center", fontFamily:"'Inter',sans-serif" }}>{f.sub}</div>
+                      </div>
+                    ))}
                   </div>
-                )}
-                <Field label="Consumo da impressora" hint="A1 Combo ≈ 350W" value={watts} onChange={setWatts} unit="W" step={10} />
-                <div style={{ margin:"16px 0", paddingTop:16, borderTop:`1px solid ${C.brd}` }}>
-                  <Toggle on={usaSolar} set={setUsaSolar} label="Tenho energia solar" color={C.solar} />
-                </div>
-                {!usaSolar ? (
-                  <>
-                    <Field label="Tarifa Equatorial Goiás" hint="com ICMS" value={kwhRede} onChange={setKwhRede} unit="R$/kWh" step={0.01} />
-                    <InfoBox color="#E8C060">Bandeira verde. Em bandeira vermelha P2, acrescente ~R$0,09/kWh.</InfoBox>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ background:`${C.solar}14`, border:`1px solid ${C.solar}30`, borderRadius:12, padding:"16px 20px", marginBottom:16 }}>
-                      <div style={{ fontSize:11, fontWeight:700, color:C.solar, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12, display:"flex", alignItems:"center", gap:6 }}><Icon n="wb_sunny" s={14} c={C.solar}/>Modo Solar Ativo</div>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <div>
-                          <div style={{ fontSize:28, fontWeight:700 }}>{N(kwhEf,3)}<span style={{ fontSize:13, color:C.cinzaMed, fontWeight:400 }}>R$/kWh</span></div>
-                          <div style={{ fontSize:12, color:C.cinzaMed }}>tarifa efetiva</div>
-                        </div>
+                  <div style={{
+                    background:`${COPPER_L}08`,
+                    border:`1px solid ${COPPER_L}18`,
+                    borderRadius:12, padding:"12px 14px",
+                  }}>
+                    <div style={{ fontSize:10, color:COPPER_L, fontFamily:"'Jost',sans-serif", letterSpacing:1.5, textTransform:"uppercase", fontWeight:700, marginBottom:12 }}>
+                      Como os custos são divididos
+                    </div>
+                    {[
+                      { icon:"🧵", label:"Filamento",   tipo:"individual",    desc:`cada peça usa ${fmtN(gramasEfetivas,1)}g` },
+                      { icon:"⚡", label:"Energia",     tipo:"compartilhado", desc:`${horasLeva}h ÷ ${pecasLeva} peças` },
+                      { icon:"🖨️", label:"Depreciação", tipo:"compartilhado", desc:`${horasLeva}h ÷ ${pecasLeva} peças` },
+                      { icon:"🔩", label:"Consumíveis", tipo:"compartilhado", desc:`rateado por peça` },
+                      { icon:"👤", label:"Mão de obra", tipo:"compartilhado", desc:`setup ÷ ${pecasLeva} peças` },
+                    ].map(r => (
+                      <div key={r.label} style={{
+                        display:"flex", justifyContent:"space-between", alignItems:"center",
+                        padding:"6px 0", borderBottom:`1px solid ${COPPER_L}10`,
+                      }}>
+                        <span style={{ fontSize:12, color:"rgba(242,234,216,0.50)", fontFamily:"'Inter',sans-serif" }}>{r.icon} {r.label}</span>
                         <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:18, fontWeight:700, color:C.solar }}>−{R$(econSol)}</div>
-                          <div style={{ fontSize:11, color:C.cinzaMed }}>economia por peça</div>
+                          <span style={{
+                            fontSize:10, fontFamily:"'Jost',sans-serif", fontWeight:600,
+                            color: r.tipo==="individual" ? SUCCESS : COPPER_L,
+                            background: r.tipo==="individual" ? `${SUCCESS}14` : `${COPPER_L}14`,
+                            padding:"2px 10px", borderRadius:100, letterSpacing:1,
+                          }}>
+                            {r.tipo}
+                          </span>
+                          <div style={{ fontSize:10, color:"rgba(242,234,216,0.28)", marginTop:3, fontFamily:"'Inter',sans-serif" }}>{r.desc}</div>
                         </div>
                       </div>
-                    </div>
-                    <Field label="Custo kWh solar" value={kwhSolar} onChange={setKwhSolar} unit="R$/kWh" step={0.01} color={C.solar} />
-                    <Field label="% gerado pelo solar" value={percSolar} onChange={setPercSolar} unit="%" step={5} color={C.solar} />
-                    <Field label="Tarifa rede (backup)" value={kwhRede} onChange={setKwhRede} unit="R$/kWh" step={0.01} />
-                  </>
-                )}
-              </Card>
-
-              {/* DEPRECIAÇÃO */}
-              <Card title="Depreciação da Impressora" icon="print" accent={C.leva}>
-                <Field label="Valor da impressora" value={precoImp} onChange={setPrecoImp} unit="R$" step={100} />
-                <Field label="Vida útil estimada" hint="horas" value={vidaUtil} onChange={setVidaUtil} unit="h" step={100} />
-              </Card>
-
-              {/* CONSUMÍVEIS */}
-              <Card title="Consumíveis" icon="build" accent={C.terra}>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  <div>
-                    <Field label="Preço do bico" value={precoBico} onChange={setPrecoBico} unit="R$" step={1} />
-                    <Field label="Vida útil bico" hint="horas" value={vidaBico} onChange={setVidaBico} unit="h" step={25} />
+                    ))}
                   </div>
-                  <div>
-                    <Field label="Preço da placa" value={precoPlaca} onChange={setPrecoPlaca} unit="R$" step={5} />
-                    <Field label="Vida útil placa" hint="impressões" value={vidaPlaca} onChange={setVidaPlaca} unit="×" step={10} />
-                  </div>
+                </>
+              ) : (
+                <>
+                  <Field label="Tempo de impressão" hint="peça única" value={horas} onChange={setHoras} unit="h" step={0.25} />
+                  <InfoBox color={COPPER}>💡 Imprime várias peças ao mesmo tempo? Ative o Modo Leva acima para dividir os custos corretamente.</InfoBox>
+                </>
+              )}
+            </Card>
+
+            <Card title="Filamento PLA" icon="🧵" accent={COPPER}>
+              <Field label="Peso por peça" hint="(g cada)" value={gramas} onChange={setGramas} unit="g" step={0.5} />
+              <Field label="Preço do filamento" value={precoKg} onChange={setPrecoKg} unit="R$/kg" step={5} />
+              <Field label="Taxa de falha / reimpressão" value={falha} onChange={setFalha} unit="%" step={1} />
+              <InfoBox color={COPPER}>
+                <span style={{ color:COPPER }}>
+                  {usaLeva
+                    ? `${pecasLeva} peças × ${fmtN(gramasEfetivas,1)}g = ${fmtN(gramasEfetivas*pecasLeva,1)}g total · ${fmt(cFilamento)} por peça`
+                    : `Consumo real: ${fmtN(gramasEfetivas,1)}g · ${fmt(cFilamento)}`
+                  }
+                </span>
+              </InfoBox>
+            </Card>
+
+            <Card title="Energia Elétrica" icon={usaSolar ? "☀️" : "⚡"} accent={usaSolar ? COPPER : TERRA}>
+              {!usaLeva && <Field label="Tempo de impressão" value={horas} onChange={setHoras} unit="h" step={0.25} />}
+              {usaLeva && (
+                <div style={{
+                  display:"flex", justifyContent:"space-between", alignItems:"center",
+                  padding:"10px 14px", background:`${COPPER_L}0A`,
+                  border:`1px solid ${COPPER_L}18`, borderRadius:10, marginBottom:14,
+                }}>
+                  <span style={{ fontSize:12, color:"rgba(242,234,216,0.45)", fontFamily:"'Inter',sans-serif" }}>Tempo da leva (definido acima)</span>
+                  <span style={{ fontSize:14, color:COPPER_L, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>
+                    {horasLeva}h ÷ {pecasLeva} = {fmtN(horasLeva/pecasLeva,2)}h/peça
+                  </span>
                 </div>
-              </Card>
-
-              {/* EMBALAGEM */}
-              <Card title="Embalagem" icon="inventory_2" accent={C.emb}>
-                <Toggle on={usaEmb} set={setUsaEmb} label="Incluir embalagem no custo" color={C.emb} />
-                {usaEmb && (
-                  <>
-                    <Field label="Custo da embalagem" value={precoEmb} onChange={setPrecoEmb} unit="R$/un" step={0.5} color={C.emb} />
-                    <Field label="Frete da embalagem" hint="rateio/un" value={freteEmb} onChange={setFreteEmb} unit="R$/un" step={0.5} />
-                  </>
-                )}
-              </Card>
-
-              {/* MÃO DE OBRA */}
-              <Card title="Mão de Obra" icon="person" accent={C.mo}>
-                <Toggle on={usaMO} set={setUsaMO} label="Incluir mão de obra (tempo ativo real)" color={C.mo} />
-                {usaMO && (
-                  <>
-                    <Field label="Valor/hora do seu trabalho" value={valorHora} onChange={setValorHora} unit="R$/h" step={5} color={C.mo} />
-                    <div style={{ background:`${C.mo}08`, border:`1px solid ${C.mo}18`, borderRadius:12, padding:"16px", marginBottom:16 }}>
-                      <div style={{ fontSize:11, fontWeight:700, color:C.mo, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:16 }}>Etapas de trabalho ativo</div>
-                      {[
-                        {l:"Preparo do arquivo", hint:"fatiamento, suportes",    icon:"computer",   v:minPrep, set:setMinPrep},
-                        {l:"Início da impressão",hint:"ligar, carregar, 1ª camada",icon:"play_arrow",v:minIni, set:setMinIni},
-                        {l:"Monitoramento",      hint:"checada durante impressão", icon:"visibility", v:minMon, set:setMinMon},
-                        {l:"Pós-impressão",      hint:"retirar, suportes, QA",    icon:"content_cut",v:minPos, set:setMinPos},
-                      ].map(e=>(
-                        <div key={e.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                          <div>
-                            <div style={{ fontSize:14, color:C.cinzaClr, display:"flex", alignItems:"center", gap:8 }}><Icon n={e.icon} s={14} c={C.mo}/>{e.l}</div>
-                            <div style={{ fontSize:12, color:C.cinzaMed, paddingLeft:22 }}>{e.hint}</div>
-                          </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                            <input type="number" min={0} step={1} value={e.v}
-                              onChange={ev=>e.set(parseFloat(ev.target.value)||0)}
-                              style={{ width:64, padding:"8px", background:"rgba(242,234,216,0.04)", border:`1px solid ${C.brd}`, borderRadius:8, color:C.mo, fontFamily:"inherit", fontWeight:700, fontSize:14, textAlign:"right", outline:"none", WebkitAppearance:"none" }} />
-                            <span style={{ fontSize:12, color:C.cinzaMed, width:24 }}>min</span>
-                          </div>
+              )}
+              <Field label="Consumo da impressora" hint="Kobra 3 V2 ≈ 350W" value={watts} onChange={setWatts} unit="W" step={10} />
+              <div style={{ margin:"14px 0 12px", paddingTop:14, borderTop:"1px solid rgba(242,234,216,0.07)" }}>
+                <Toggle value={usaSolar} onChange={setUsaSolar} label="Tenho energia solar em casa ☀️" color={COPPER} />
+              </div>
+              {!usaSolar ? (
+                <>
+                  <Field label="Tarifa Equatorial Goiás" hint="com ICMS" value={kwhRede} onChange={setKwhRede} unit="R$/kWh" step={0.01} />
+                  <InfoBox color={TERRA}>💡 Bandeira verde. Vermelha P2 acrescente ~R$0,09/kWh</InfoBox>
+                </>
+              ) : (
+                <div style={{ marginTop:4 }}>
+                  <div style={{
+                    background:`${COPPER}12`,
+                    border:`1px solid ${COPPER}28`,
+                    borderRadius:14, padding:"16px 18px", marginBottom:14,
+                  }}>
+                    <div style={{ fontSize:10, letterSpacing:2, color:COPPER, fontFamily:"'Jost',sans-serif", textTransform:"uppercase", fontWeight:700, marginBottom:12 }}>☀️ Modo Solar</div>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div>
+                        <div style={{ fontSize:24, fontWeight:700, color:PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>
+                          {fmt(kwhEfetivo)}<span style={{ fontSize:13, color:"rgba(242,234,216,0.40)" }}>/kWh</span>
                         </div>
-                      ))}
-                      <div style={{ borderTop:`1px solid ${C.mo}18`, paddingTop:12, display:"flex", justifyContent:"space-between" }}>
-                        <span style={{ fontSize:13, color:C.mo, fontWeight:600 }}>Total ativo</span>
-                        <span style={{ fontSize:14, fontWeight:700, color:C.mo }}>{minAt} min · {R$(cMO)}</span>
+                        <div style={{ fontSize:11, color:"rgba(242,234,216,0.35)", marginTop:3, fontFamily:"'Inter',sans-serif" }}>tarifa efetiva</div>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:15, color:SUCCESS, fontWeight:600, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>- {fmt(economiaSolar)}</div>
+                        <div style={{ fontSize:10, color:"rgba(242,234,216,0.35)", marginTop:3, fontFamily:"'Inter',sans-serif" }}>por peça</div>
                       </div>
                     </div>
-                    <InfoBox color={C.mo}>A máquina trabalha sozinha durante a impressão. Só cobre o tempo em que você está ativamente envolvido.</InfoBox>
-                  </>
-                )}
-              </Card>
+                  </div>
+                  <Field label="Custo kWh solar" value={kwhSolar} onChange={setKwhSolar} unit="R$/kWh" step={0.01} highlight={COPPER} />
+                  <Field label="% gerado pelo solar" value={percSolar} onChange={setPercSolar} unit="%" step={5} highlight={COPPER} />
+                  <Field label="Tarifa rede (backup)" value={kwhRede} onChange={setKwhRede} unit="R$/kWh" step={0.01} />
+                </div>
+              )}
+            </Card>
 
-              {/* MARGEM */}
-              <Card title="Margem de Lucro" icon="trending_up" accent={C.cobre}>
-                <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-                  <input type="range" min={0} max={200} step={5} value={margem}
-                    onChange={e=>setMargem(parseInt(e.target.value))}
-                    style={{ flex:1, accentColor:C.cobre, height:4 }} />
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <input type="number" min={0} step={5} value={margem}
-                      onChange={e=>setMargem(parseFloat(e.target.value)||0)}
-                      style={{ width:80, padding:"8px 12px", background:`${C.cobre}12`, border:`1px solid ${C.cobre}40`, borderRadius:8, color:C.cobre, fontFamily:"inherit", fontSize:20, fontWeight:700, textAlign:"right", outline:"none", WebkitAppearance:"none" }} />
-                    <span style={{ fontSize:14, color:C.cinzaMed }}>%</span>
+            <Card title="Depreciação" icon="🖨️" accent={TERRA_D}>
+              <Field label="Valor da impressora" value={precoImp} onChange={setPrecoImp} unit="R$" step={100} />
+              <Field label="Vida útil estimada" hint="horas" value={vidaUtil} onChange={setVidaUtil} unit="h" step={100} />
+            </Card>
+
+            <Card title="Consumíveis" icon="🔩" accent={BLUE}>
+              <Field label="Preço do bico" value={precoBico} onChange={setPrecoBico} unit="R$" step={1} />
+              <Field label="Vida útil do bico" hint="horas" value={vidaBico} onChange={setVidaBico} unit="h" step={25} />
+              <Field label="Preço da placa" value={precoPlaca} onChange={setPrecoPlaca} unit="R$" step={5} />
+              <Field label="Vida útil da placa" hint="impressões" value={vidaPlaca} onChange={setVidaPlaca} unit="x" step={10} />
+            </Card>
+
+            <Card title="Embalagem" icon="📦" accent={TERRA}>
+              <Toggle value={usaEmb} onChange={setUsaEmb} label="Incluir embalagem" color={TERRA} />
+              {usaEmb && (
+                <>
+                  <Field label="Custo da embalagem" value={precoEmb} onChange={setPrecoEmb} unit="R$/un" step={0.5} />
+                  <Field label="Frete da embalagem" hint="rateio/un" value={freteEmb} onChange={setFreteEmb} unit="R$/un" step={0.5} />
+                </>
+              )}
+            </Card>
+
+            <Card title="Mão de Obra (tempo ativo real)" icon="👤" accent="#7F8CFF">
+              <Toggle value={usaMO} onChange={setUsaMO} label="Incluir mão de obra" color="#7F8CFF" />
+              {usaMO && (
+                <>
+                  <Field label="Valor hora do seu trabalho" value={valorHora} onChange={setValorHora} unit="R$/h" step={5} />
+                  <div style={{
+                    background:"rgba(127,140,255,0.06)",
+                    border:"1px solid rgba(127,140,255,0.14)",
+                    borderRadius:14, padding:"14px 16px", marginBottom:14,
+                  }}>
+                    <div style={{ fontSize:10, color:"#7F8CFF", fontFamily:"'Jost',sans-serif", letterSpacing:1.5, textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>
+                      Etapas de trabalho ativo
+                    </div>
+                    {[
+                      { label:"🖥️ Preparo do arquivo", hint:"fatiamento, suportes, posição", value:minPreparo, set:setMinPreparo },
+                      { label:"▶️ Início da impressão", hint:"ligar, carregar, 1ª camada",   value:minInicio,  set:setMinInicio },
+                      { label:"👁️ Monitoramento",       hint:"checada durante impressão",    value:minMonitor, set:setMinMonitor },
+                      { label:"✂️ Pós-impressão",       hint:"retirar, suportes, qualidade", value:minPos,     set:setMinPos },
+                    ].map(e => (
+                      <div key={e.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                        <div>
+                          <div style={{ fontSize:13, color:"rgba(242,234,216,0.72)", fontFamily:"'Inter',sans-serif" }}>{e.label}</div>
+                          <div style={{ fontSize:11, color:"rgba(242,234,216,0.28)", marginTop:2, fontFamily:"'Inter',sans-serif" }}>{e.hint}</div>
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <input type="number" min={0} step={1} value={e.value}
+                            onChange={ev => e.set(parseFloat(ev.target.value)||0)}
+                            style={{
+                              width:64, padding:"8px 10px",
+                              background:"rgba(242,234,216,0.04)",
+                              border:"1px solid rgba(127,140,255,0.22)",
+                              borderRadius:10, color:"#7F8CFF",
+                              fontFamily:"'Inter',sans-serif", fontSize:14,
+                              textAlign:"right", outline:"none", WebkitAppearance:"none",
+                            }}
+                          />
+                          <span style={{ fontSize:11, color:"rgba(242,234,216,0.28)", minWidth:24, fontFamily:"'Inter',sans-serif" }}>min</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{
+                      borderTop:"1px solid rgba(127,140,255,0.12)", paddingTop:12, marginTop:4,
+                      display:"flex", justifyContent:"space-between", alignItems:"center",
+                    }}>
+                      <span style={{ fontSize:12, color:"#7F8CFF", fontFamily:"'Inter',sans-serif" }}>Total tempo ativo</span>
+                      <span style={{ fontSize:13, color:"#7F8CFF", fontWeight:700, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>
+                        {minAtivo} min · {fmt(cMO)}
+                      </span>
+                    </div>
+                  </div>
+                  <InfoBox color="#7F8CFF">
+                    💡 A máquina trabalha sozinha durante a impressão. Seu tempo real cobrado é só o que você está <em>ativamente</em> envolvido — preparo, início, monitoramento e acabamento.
+                  </InfoBox>
+                </>
+              )}
+            </Card>
+
+            <Card title="Margem de Lucro" icon="📈" accent={COPPER}>
+              <Field label="Margem desejada" value={margem} onChange={setMargem} unit="%" step={5} />
+            </Card>
+          </div>
+
+          {/* Painel resultado */}
+          <div className="sticky-col">
+            <div style={{
+              ...CARD_BASE,
+              border:`1px solid ${COPPER}30`,
+              boxShadow:`0 28px 80px rgba(0,0,0,0.42), 0 0 32px rgba(201,130,68,0.10)`,
+              padding:"24px 22px",
+            }}>
+              <div style={{ fontFamily:"'Jost',sans-serif", fontSize:10, letterSpacing:2.5, color:COPPER, textTransform:"uppercase", fontWeight:700, marginBottom: usaLeva ? 12 : 22 }}>
+                📊 Resultado por Peça
+              </div>
+
+              {usaLeva && (
+                <div style={{
+                  display:"flex", alignItems:"center", gap:10, padding:"10px 14px",
+                  background:`${COPPER_L}0E`, border:`1px solid ${COPPER_L}24`,
+                  borderRadius:12, marginBottom:18,
+                }}>
+                  <span style={{ fontSize:18 }}>🖨️</span>
+                  <div>
+                    <div style={{ fontSize:12, color:COPPER_L, fontWeight:600, fontFamily:"'Jost',sans-serif" }}>Modo Leva · {pecasLeva} peças · {horasLeva}h</div>
+                    <div style={{ fontSize:11, color:"rgba(242,234,216,0.35)", marginTop:2, fontFamily:"'Inter',sans-serif" }}>Custos compartilhados divididos por {pecasLeva}</div>
                   </div>
                 </div>
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop:12, padding:"8px 0", borderTop:`1px solid ${C.brd}` }}>
-                  <span style={{ fontSize:13, color:C.cinzaMed }}>Lucro por peça</span>
-                  <span style={{ fontSize:15, fontWeight:700, color:C.cobre }}>{R$(total*margem/100)}</span>
-                </div>
-              </Card>
-            </div>
+              )}
 
-            {/* resultado col */}
-            <div className="sticky-col">
-              <PainelResultado
-                total={total} totalSemSolar={totSemSol} precoVenda={precoVenda}
-                margem={margem} bars={barsResult} usaSolar={usaSolar}
-                economiaSolar={econSol} usaLeva={usaLeva} pecasLeva={pecasLeva}
-                horasLeva={horasLeva}
-                onRevenda={()=>setAba("revenda")} onCustom={()=>setAba("custom")}
-              />
+              {[
+                { l:"Filamento PLA",                          v:cFilamento,  sub:`${fmtN(gramasEfetivas,1)}g · individual` },
+                { l: usaSolar ? "Energia ☀️" : "Energia ⚡", v:cEnergia,   sub: usaLeva ? `${horasLeva}h ÷ ${pecasLeva} peças` : `${fmt(kwhEfetivo)}/kWh`, solar:usaSolar },
+                { l:"Depreciação",                            v:cDeprec,     sub: usaLeva ? `${horasLeva}h ÷ ${pecasLeva} peças` : `${horas}h` },
+                { l:"Consumíveis",                            v:cConsumivel, sub: usaLeva ? `rateado ÷ ${pecasLeva}` : "Bico + placa" },
+                ...(usaEmb ? [{ l:"Embalagem",   v:cEmb, sub:"por unidade" }] : []),
+                ...(usaMO  ? [{ l:"Mão de obra", v:cMO,  sub: usaLeva ? `${minAtivo}min ÷ ${pecasLeva}` : `${minAtivo} min ativos` }] : []),
+              ].map(r => (
+                <div key={r.l} style={{
+                  display:"flex", justifyContent:"space-between", alignItems:"center",
+                  padding:"10px 0", borderBottom:"1px solid rgba(242,234,216,0.06)",
+                }}>
+                  <div>
+                    <div style={{ fontSize:13, color:"rgba(242,234,216,0.70)", fontFamily:"'Inter',sans-serif" }}>{r.l}</div>
+                    <div style={{ fontSize:10, color: r.solar ? COPPER+"90" : "rgba(242,234,216,0.30)", marginTop:2, fontFamily:"'Inter',sans-serif" }}>{r.sub}</div>
+                  </div>
+                  <span style={{ fontSize:14, color: r.solar ? COPPER : PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{fmt(r.v)}</span>
+                </div>
+              ))}
+
+              {usaSolar && economiaSolar > 0 && (
+                <div style={{
+                  display:"flex", justifyContent:"space-between", padding:"9px 12px",
+                  margin:"10px 0", background:`${SUCCESS}0C`,
+                  borderRadius:10, border:`1px dashed ${SUCCESS}28`,
+                }}>
+                  <span style={{ fontSize:12, color:SUCCESS, fontFamily:"'Inter',sans-serif" }}>☀️ Economia solar</span>
+                  <span style={{ fontSize:13, color:SUCCESS, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>- {fmt(economiaSolar)}</span>
+                </div>
+              )}
+
+              <div style={{ marginTop:10 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(242,234,216,0.08)" }}>
+                  <span style={{ fontWeight:700, color:PERG, fontFamily:"'Inter',sans-serif" }}>Custo total</span>
+                  <span style={{ fontSize:17, fontWeight:700, color:PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{fmt(total)}</span>
+                </div>
+                {usaSolar && (
+                  <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:"1px solid rgba(242,234,216,0.06)" }}>
+                    <span style={{ fontSize:11, color:"rgba(242,234,216,0.25)", fontFamily:"'Inter',sans-serif" }}>Sem solar</span>
+                    <span style={{ fontSize:11, color:"rgba(242,234,216,0.25)", textDecoration:"line-through", fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{fmt(totalSemSolar)}</span>
+                  </div>
+                )}
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0" }}>
+                  <span style={{ fontSize:13, color:"rgba(242,234,216,0.35)", fontFamily:"'Inter',sans-serif" }}>Margem ({margem}%)</span>
+                  <span style={{ fontSize:13, color:"rgba(242,234,216,0.35)", fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>+ {fmt(total*margem/100)}</span>
+                </div>
+              </div>
+
+              {/* Preço mínimo de venda */}
+              <div style={{
+                marginTop:10,
+                background:`linear-gradient(135deg, ${TERRA_D}, ${COPPER}, ${COPPER_L})`,
+                borderRadius:16, padding:"20px 18px", textAlign:"center",
+                boxShadow:`0 14px 32px rgba(181,107,58,0.28)`,
+              }}>
+                <div style={{ fontSize:10, letterSpacing:2.5, color:"rgba(255,255,255,0.65)", fontFamily:"'Jost',sans-serif", textTransform:"uppercase", marginBottom:8, fontWeight:700 }}>
+                  Preço Mínimo de Venda
+                </div>
+                <div style={{ fontSize:42, fontWeight:700, letterSpacing:-1, color:"#fff", fontFamily:"'Jost',sans-serif", fontVariantNumeric:"tabular-nums" }}>
+                  {fmt(precoVenda)}
+                </div>
+                <div style={{ fontSize:12, color:"rgba(255,255,255,0.50)", marginTop:6, fontFamily:"'Inter',sans-serif" }}>por peça · venda unitária</div>
+              </div>
+
+              {/* Composição */}
+              <div style={{ marginTop:24 }}>
+                <div style={{ fontSize:10, letterSpacing:2, color:"rgba(242,234,216,0.28)", fontFamily:"'Jost',sans-serif", textTransform:"uppercase", marginBottom:14, fontWeight:700 }}>
+                  Composição
+                </div>
+                {bars.map(b => <Bar key={b.label} {...b} total={total} />)}
+              </div>
+
+              {/* Mini métricas */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:20 }}>
+                {(usaLeva ? [
+                  { l:"Custo por peça",          v:fmt(total) },
+                  { l:`Total leva (${pecasLeva}x)`,  v:fmt(total*pecasLeva) },
+                  { l:`Receita leva (${pecasLeva}x)`, v:fmt(precoVenda*pecasLeva) },
+                  { l:`Lucro leva (${pecasLeva}x)`,   v:fmt((precoVenda-total)*pecasLeva) },
+                ] : [
+                  { l:"Por grama",    v:fmt(total/Math.max(gramas,.01)) },
+                  { l:"Por hora",     v:fmt(total/Math.max(horas,.01)) },
+                  { l:"10 peças/mês", v:fmt(precoVenda*10) },
+                  { l:"50 peças/mês", v:fmt(precoVenda*50) },
+                ]).map(c => (
+                  <div key={c.l} style={{
+                    background:"rgba(242,234,216,0.03)",
+                    border:`1px solid ${BORDER}`,
+                    borderRadius:12, padding:"12px 14px",
+                  }}>
+                    <div style={{ fontSize:10, color:"rgba(242,234,216,0.30)", marginBottom:5, fontFamily:"'Inter',sans-serif" }}>{c.l}</div>
+                    <div style={{ fontSize:13, color:PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{c.v}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Botões de navegação */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:12 }}>
+                <button
+                  onClick={() => setAba("revenda")}
+                  style={{
+                    padding:"12px", cursor:"pointer",
+                    background:`${TERRA}14`, border:`1px solid ${TERRA}30`,
+                    borderRadius:14, color:TERRA,
+                    fontFamily:"'Jost',sans-serif", fontSize:10,
+                    letterSpacing:1.5, textTransform:"uppercase", fontWeight:700,
+                    transition:"all .2s",
+                  }}
+                >
+                  📦 Revenda →
+                </button>
+                <button
+                  onClick={() => setAba("custom")}
+                  style={{
+                    padding:"12px", cursor:"pointer",
+                    background:`${COPPER_L}14`, border:`1px solid ${COPPER_L}30`,
+                    borderRadius:14, color:COPPER_L,
+                    fontFamily:"'Jost',sans-serif", fontSize:10,
+                    letterSpacing:1.5, textTransform:"uppercase", fontWeight:700,
+                    transition:"all .2s",
+                  }}
+                >
+                  💎 Personalizado →
+                </button>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ABA REVENDA */}
-        {aba==="revenda" && (
-          <AbaRevenda total={total} precoVenda={precoVenda} margem={margem} custoSetup={custoSetup} />
-        )}
+      {/* ── ABA REVENDA ───────────────────────────────────────── */}
+      {aba === "revenda" && (
+        <div style={{ maxWidth:860, margin:"0 auto" }}>
+          <div style={{
+            ...CARD_BASE,
+            border:`1px solid ${TERRA}20`,
+            padding:"14px 20px", marginBottom:16,
+            display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:10,
+          }}>
+            <div style={{ fontFamily:"'Jost',sans-serif", fontSize:10, color:TERRA, letterSpacing:2, textTransform:"uppercase", fontWeight:700 }}>
+              Base: custo unitário
+            </div>
+            <div style={{ display:"flex", gap:24 }}>
+              {[
+                { l:"Custo",       v:fmt(total) },
+                { l:"Varejo (1x)", v:fmt(precoVenda) },
+                { l:"Margem",      v:`${margem}%` },
+              ].map(c => (
+                <div key={c.l} style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:10, color:"rgba(242,234,216,0.35)", fontFamily:"'Inter',sans-serif" }}>{c.l}</div>
+                  <div style={{ fontSize:14, color:PERG, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums", marginTop:2 }}>{c.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Card title="Simulador de Revenda em Lote" icon="📦" accent={TERRA}>
+            <TabelaRevenda custoBase={total} custoSetup={custoSetup} />
+          </Card>
+        </div>
+      )}
 
-        {/* ABA PERSONALIZADO */}
-        {aba==="custom" && (
-          <AbaPersonalizado custoBase={total} margemBase={margem} />
-        )}
-      </main>
-
-      {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer style={{ borderTop:`1px solid ${C.brd}`, padding:"24px", textAlign:"center" }}>
-        <img src="/logo-light-horizontal.svg" alt="Talharia" style={{ height:24, marginBottom:8, opacity:0.5 }} />
-        <div style={{ fontSize:12, color:C.cinzaEsc }}>Arte sacra impressa em 3D · Goiânia, GO</div>
-      </footer>
+      {/* ── ABA PERSONALIZADO ─────────────────────────────────── */}
+      {aba === "custom" && <AbaPersonalizacao custoBase={total} margemBase={margem} />}
     </div>
   );
 }
