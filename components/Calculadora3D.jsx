@@ -603,6 +603,9 @@ export default function Calc3D() {
   const [gramas, setGramas]         = useState(50);
   const [precoKg, setPrecoKg]       = useState(120);
   const [falha, setFalha]           = useState(10);
+  const [usaMulticolor, setUsaMulticolor] = useState(false);
+  const [numCores, setNumCores]     = useState(3);
+  const [purgaTotal, setPurgaTotal] = useState(20);
   const [horas, setHoras]           = useState(3);
   const [watts, setWatts]           = useState(350);
   const [usaSolar, setUsaSolar]     = useState(false);
@@ -635,18 +638,20 @@ export default function Calc3D() {
   const economiaSolar    = cEnergiaSemSolar - cEnergia;
   const gramasEfetivas   = gramas*(1+falha/100);
   const cFilamento       = (gramasEfetivas/1000)*precoKg;
+  const cPurga           = usaMulticolor ? (purgaTotal/1000)*precoKg : 0;
   const cDeprec          = ((precoImp/vidaUtil)*(usaLeva ? horasLeva : horas)) / divisorLeva;
   const cConsumivel      = ((precoBico/vidaBico)*(usaLeva ? horasLeva : horas) + precoPlaca/vidaPlaca) / divisorLeva;
   const cEmb             = usaEmb ? precoEmb+freteEmb : 0;
   const minAtivo         = minPreparo + minInicio + minMonitor + minPos;
   const cMO              = usaMO ? (valorHora*(minAtivo/60)) / divisorLeva : 0;
   const custoSetup       = usaMO ? (valorHora*((minPreparo+minInicio)/60)) / divisorLeva : 0;
-  const total            = cFilamento+cEnergia+cDeprec+cConsumivel+cEmb+cMO;
-  const totalSemSolar    = cFilamento+cEnergiaSemSolar+cDeprec+cConsumivel+cEmb+cMO;
+  const total            = cFilamento+cPurga+cEnergia+cDeprec+cConsumivel+cEmb+cMO;
+  const totalSemSolar    = cFilamento+cPurga+cEnergiaSemSolar+cDeprec+cConsumivel+cEmb+cMO;
   const precoVenda       = total*(1+margem/100);
 
   const bars = [
     { label:"Filamento PLA", value:cFilamento,  color:COPPER },
+    ...(usaMulticolor ? [{ label:`Purga AMS (${numCores} cores)`, value:cPurga, color:"#E8A87C" }] : []),
     { label:"Energia",       value:cEnergia,    color: usaSolar ? COPPER_L : TERRA },
     { label:"Depreciação",   value:cDeprec,     color:TERRA_D },
     { label:"Consumíveis",   value:cConsumivel, color:BLUE },
@@ -687,7 +692,7 @@ export default function Calc3D() {
         }}>
           <span style={{ width:6, height:6, borderRadius:"50%", background:COPPER, display:"inline-block", flexShrink:0 }} />
           <span style={{ fontSize:10, letterSpacing:2.5, color:COPPER, fontFamily:"'Jost',sans-serif", textTransform:"uppercase", fontWeight:700 }}>
-            Anycubic Kobra 3 V2 · PLA · Goiânia — GO
+            Bambu Lab A1 Combo · AMS Lite · Goiânia — GO
           </span>
         </div>
         <h1 style={{ fontSize:30, fontWeight:700, margin:0, letterSpacing:-0.5, lineHeight:1.2, color:PERG, fontFamily:"'Jost',sans-serif" }}>
@@ -785,7 +790,7 @@ export default function Calc3D() {
               )}
             </Card>
 
-            <Card title="Filamento PLA" icon="🧵" accent={COPPER}>
+            <Card title="Filamento" icon="🧵" accent={COPPER}>
               <Field label="Peso por peça" hint="(g cada)" value={gramas} onChange={setGramas} unit="g" step={0.5} />
               <Field label="Preço do filamento" value={precoKg} onChange={setPrecoKg} unit="R$/kg" step={5} />
               <Field label="Taxa de falha / reimpressão" value={falha} onChange={setFalha} unit="%" step={1} />
@@ -797,6 +802,62 @@ export default function Calc3D() {
                   }
                 </span>
               </InfoBox>
+
+              {/* Multicolor AMS Lite */}
+              <div style={{ marginTop:18, paddingTop:16, borderTop:"1px solid rgba(242,234,216,0.07)" }}>
+                <Toggle value={usaMulticolor} onChange={setUsaMulticolor} label="Impressão multicolor (AMS Lite)" color="#E8A87C" />
+                {usaMulticolor && (
+                  <div style={{
+                    background:"rgba(232,168,124,0.06)", border:"1px solid rgba(232,168,124,0.20)",
+                    borderRadius:14, padding:"14px 16px", marginTop:4,
+                  }}>
+                    <div style={{ fontSize:10, color:"#E8A87C", fontFamily:"'Jost',sans-serif", letterSpacing:1.5, textTransform:"uppercase", fontWeight:700, marginBottom:14 }}>
+                      🎨 AMS Lite — Purga de Troca
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+                      <div>
+                        <div style={{ fontSize:12, color:"rgba(242,234,216,0.45)", marginBottom:8, fontFamily:"'Inter',sans-serif" }}>Nº de cores</div>
+                        <input type="number" min={2} max={4} step={1} value={numCores}
+                          onChange={e => setNumCores(Math.min(4, Math.max(2, parseInt(e.target.value)||2)))}
+                          style={{
+                            width:"100%", padding:"10px 14px",
+                            background:"rgba(232,168,124,0.10)", border:"1px solid rgba(232,168,124,0.30)",
+                            borderRadius:12, color:"#E8A87C",
+                            fontFamily:"'Inter',sans-serif", fontSize:22, fontWeight:700,
+                            textAlign:"center", outline:"none", WebkitAppearance:"none",
+                          }}
+                        />
+                        <div style={{ fontSize:10, color:"rgba(242,234,216,0.28)", marginTop:4, textAlign:"center", fontFamily:"'Inter',sans-serif" }}>máx 4 (AMS Lite)</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:12, color:"rgba(242,234,216,0.45)", marginBottom:8, fontFamily:"'Inter',sans-serif" }}>Purga total</div>
+                        <input type="number" min={0} step={1} value={purgaTotal}
+                          onChange={e => setPurgaTotal(parseFloat(e.target.value)||0)}
+                          style={{
+                            width:"100%", padding:"10px 14px",
+                            background:"rgba(232,168,124,0.10)", border:"1px solid rgba(232,168,124,0.30)",
+                            borderRadius:12, color:"#E8A87C",
+                            fontFamily:"'Inter',sans-serif", fontSize:22, fontWeight:700,
+                            textAlign:"center", outline:"none", WebkitAppearance:"none",
+                          }}
+                        />
+                        <div style={{ fontSize:10, color:"rgba(242,234,216,0.28)", marginTop:4, textAlign:"center", fontFamily:"'Inter',sans-serif" }}>gramas desperdiçadas</div>
+                      </div>
+                    </div>
+                    <div style={{
+                      display:"flex", justifyContent:"space-between", alignItems:"center",
+                      padding:"10px 12px", background:"rgba(232,168,124,0.08)", borderRadius:10,
+                      marginBottom:10,
+                    }}>
+                      <span style={{ fontSize:12, color:"rgba(242,234,216,0.50)", fontFamily:"'Inter',sans-serif" }}>Custo da purga</span>
+                      <span style={{ fontSize:14, color:"#E8A87C", fontWeight:700, fontFamily:"'Inter',sans-serif", fontVariantNumeric:"tabular-nums" }}>{fmt(cPurga)}</span>
+                    </div>
+                    <div style={{ fontSize:11, color:"rgba(242,234,216,0.35)", lineHeight:1.6, fontFamily:"'Inter',sans-serif" }}>
+                      💡 Veja a purga estimada no <strong style={{ color:"rgba(242,234,216,0.55)" }}>Bambu Studio</strong> após fatiamento — fica no resumo de material. Peças de 3 cores costumam desperdiçar 15–30g.
+                    </div>
+                  </div>
+                )}
+              </div>
             </Card>
 
             <Card title="Energia Elétrica" icon={usaSolar ? "☀️" : "⚡"} accent={usaSolar ? COPPER : TERRA}>
@@ -813,7 +874,7 @@ export default function Calc3D() {
                   </span>
                 </div>
               )}
-              <Field label="Consumo da impressora" hint="Kobra 3 V2 ≈ 350W" value={watts} onChange={setWatts} unit="W" step={10} />
+              <Field label="Consumo da impressora" hint="A1 Combo ≈ 350W médio" value={watts} onChange={setWatts} unit="W" step={10} />
               <div style={{ margin:"14px 0 12px", paddingTop:14, borderTop:"1px solid rgba(242,234,216,0.07)" }}>
                 <Toggle value={usaSolar} onChange={setUsaSolar} label="Tenho energia solar em casa ☀️" color={COPPER} />
               </div>
@@ -930,7 +991,41 @@ export default function Calc3D() {
             </Card>
 
             <Card title="Margem de Lucro" icon="📈" accent={COPPER}>
-              <Field label="Margem desejada" value={margem} onChange={setMargem} unit="%" step={5} />
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
+                {[
+                  { label:"Varejo",  mult:8, pct:700, color:COPPER },
+                  { label:"Revenda", mult:4, pct:300, color:COPPER_L },
+                  { label:"Atacado", mult:3, pct:200, color:TERRA },
+                ].map(p => {
+                  const ativo = margem === p.pct;
+                  return (
+                    <div key={p.label}
+                      onClick={() => setMargem(p.pct)}
+                      style={{
+                        background: ativo ? `${p.color}20` : `${p.color}08`,
+                        border: `1px solid ${ativo ? p.color+"60" : p.color+"20"}`,
+                        borderRadius:14, padding:"12px 8px", textAlign:"center",
+                        cursor:"pointer", transition:"all .2s",
+                        boxShadow: ativo ? `0 0 0 2px ${p.color}30` : "none",
+                      }}
+                    >
+                      <div style={{ fontSize:9, color:p.color, fontFamily:"'Jost',sans-serif", letterSpacing:1.5, textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>
+                        {p.label}
+                      </div>
+                      <div style={{ fontSize:22, fontWeight:700, color: ativo ? p.color : PERG, fontFamily:"'Jost',sans-serif", lineHeight:1 }}>
+                        {p.mult}×
+                      </div>
+                      <div style={{ fontSize:10, color:"rgba(242,234,216,0.35)", marginTop:4, fontFamily:"'Inter',sans-serif" }}>
+                        {p.pct}% markup
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Field label="Markup personalizado" value={margem} onChange={setMargem} unit="%" step={5} />
+              <InfoBox color={COPPER}>
+                💡 <strong style={{color:COPPER}}>8× varejo</strong> = preço final 8x o custo. Clique num preset ou ajuste manualmente abaixo.
+              </InfoBox>
             </Card>
           </div>
 
@@ -962,6 +1057,7 @@ export default function Calc3D() {
 
               {[
                 { l:"Filamento PLA",                          v:cFilamento,  sub:`${fmtN(gramasEfetivas,1)}g · individual` },
+                ...(usaMulticolor ? [{ l:`Purga AMS (${numCores} cores)`, v:cPurga, sub:`${purgaTotal}g desperdiçados` }] : []),
                 { l: usaSolar ? "Energia ☀️" : "Energia ⚡", v:cEnergia,   sub: usaLeva ? `${horasLeva}h ÷ ${pecasLeva} peças` : `${fmt(kwhEfetivo)}/kWh`, solar:usaSolar },
                 { l:"Depreciação",                            v:cDeprec,     sub: usaLeva ? `${horasLeva}h ÷ ${pecasLeva} peças` : `${horas}h` },
                 { l:"Consumíveis",                            v:cConsumivel, sub: usaLeva ? `rateado ÷ ${pecasLeva}` : "Bico + placa" },
